@@ -11,13 +11,17 @@
 }
 \usage{
 tssem1(my.df, n, method=c("FEM","REM"), cor.analysis = TRUE, cluster=NULL,
-       RE.type=c("Symm", "Diag", "Zero"), RE.startvalues=0.1, RE.lbound=1e-10, I2="I2q",
+       RE.type=c("Symm", "Diag", "Zero", "User"), RE.startvalues=0.1,
+       RE.lbound=1e-10, RE.constraints=NULL, I2="I2q",
+       acov=c("individual", "unweighted", "weighted"),
        model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...)
 tssem1FEM(my.df, n, cor.analysis=TRUE, model.name=NULL,
           cluster=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...)
-tssem1REM(my.df, n, cor.analysis=TRUE, RE.type=c("Symm", "Diag", "Zero"),
-          RE.startvalues=0.1, RE.lbound=1e-10, I2="I2q", model.name=NULL,
-          suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...)
+tssem1REM(my.df, n, cor.analysis=TRUE, RE.type=c("Symm", "Diag", "Zero","User"),
+          RE.startvalues=0.1, RE.lbound=1e-10, RE.constraints=NULL,
+          I2="I2q", acov=c("individual", "unweighted", "weighted"),
+          model.name=NULL, suppressWarnings=TRUE,
+          silent=TRUE, run=TRUE, ...)
 }
 \arguments{
   \item{my.df}{A list of correlation/covariance matrices
@@ -34,26 +38,46 @@ tssem1REM(my.df, n, cor.analysis=TRUE, RE.type=c("Symm", "Diag", "Zero"),
 	clusters. Analyses will be conducted for each cluster. It will be
 	ignored when \code{method="REM"}.
   }
-  \item{RE.type}{Either \code{"Symm"}, \code{"Diag"} or
-	\code{"Zero"}. If it is \code{"Symm"} (default if missing), a
+  \item{RE.type}{Either \code{"Symm"}, \code{"Diag"}, 
+	\code{"Zero"} or \code{"User"}. If it is \code{"Symm"} (default if missing), a
 	symmetric matrix is used for the random effects on the covariances
 	among the correlation (or covariance) vectors. If it is
 	\code{"Diag"}, a diagonal matrix is used for the random effects
 	meaning that the random effects are independent. If it is
 	\code{"Zero"}, there is no random effects which is similar to the
 	conventional Generalized Least Squares (GLS) approach to
-	fixed-effects analysis. This argument will be ignored when \code{method="FEM"}.}
+	fixed-effects analysis.
+    \code{"User"}, user has to specific the variance component via the
+	\code{RE.constraints} argument. This argument will be ignored when \code{method="FEM"}.}
   \item{RE.startvalues}{Starting values on the
 	diagonals of the variance component of the random effects. It will be ignored when \code{method="FEM"}.}
   \item{RE.lbound}{Lower bounds on the diagonals of the variance
 	component of the random effects. It will be ignored when
 	\code{method="FEM"}.}
+  \item{RE.constraints}{A \eqn{p*}{p*} x \eqn{p*}{p*} matrix
+	specifying the variance componets of the random effects, where
+	\eqn{p*}{p*} is the number of effect sizes. If the input
+	is not a matrix, it is converted into a matrix by
+	\code{as.matrix()}. The default is that all
+	covariance/variance components are free. The format of this matrix
+	follows \code{\link[metaSEM]{as.mxMatrix}}. Elements of the variance
+	components can be constrained equally by using the same labels. If a zero matrix is
+	specified, it becomes a fixed-effects meta-analysis.
+  }  
   \item{I2}{Possible options are \code{"I2q"}, \code{"I2hm"} and
 	\code{"I2am"}. They represent the \code{I2} calculated by using a
 	typical within-study sampling variance from the Q statistic, the
 	harmonic mean and the arithmatic mean of the within-study sampling
 	variances (Xiong, Miller, & Morris, 2010). More than one options are possible. If \code{intervals.type="LB"}, 95\% confidence intervals on the heterogeneity indices will be constructed. 
-  }  
+  }
+  \item{acov}{If it is \code{individual} (the default), the sampling variance covariance
+	matrices are calculated based on individual correlation/covariance
+	matrix. If it is either \code{unweighted} or \code{weighted}, the average
+	correlation/covariance matrix is calculated based on the unweighted
+	or weighted mean with the sample sizes. The average
+	correlation/covariance matrix is used to calculate the sampling
+	variance covariance matrices. This argument is ignored with the
+	\code{method="FEM"} argument.}
   \item{model.name}{A string for the model name in \code{\link[OpenMx]{mxModel}}. 
   }  
   \item{suppressWarnings}{Logical. If \code{TRUE}, warnings are
