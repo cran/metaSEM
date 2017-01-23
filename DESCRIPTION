@@ -1,8 +1,8 @@
 Package: metaSEM
 Type: Package
 Title: Meta-Analysis using Structural Equation Modeling
-Version: 0.9.10
-Date: 2016-08-18
+Version: 0.9.12
+Date: 2017-01-23
 Depends: R (>= 3.2.3), OpenMx (>= 2.6.7)
 Imports: Matrix, MASS, ellipse, graphics, stats, utils
 Suggests: metafor, semPlot, lavaan, R.rsp
@@ -19,6 +19,6 @@ LazyData: yes
 ByteCompile: yes
 URL: https://github.com/mikewlcheung/metasem
 NeedsCompilation: no
-Packaged: 2016-08-18 08:18:11 UTC; mikewlcheung
+Packaged: 2017-01-23 09:30:48 UTC; mikewlcheung
 Repository: CRAN
-Date/Publication: 2016-08-18 12:40:32
+Date/Publication: 2017-01-23 13:49:59

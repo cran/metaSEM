@@ -729,6 +729,7 @@ print.reml <- function(x, ...) {
     print(summary.default(x), ...)
 }
 
+
 vcov.meta <- function(object, select=c("all", "fixed", "random"), ...) {
     if (!is.element("meta", class(object)))
     stop("\"object\" must be an object of class \"meta\".")
@@ -744,16 +745,7 @@ vcov.meta <- function(object, select=c("all", "fixed", "random"), ...) {
          fixed =  my.name <- my.name[ grep("Intercept|Slope", my.name) ],
          random = my.name <- my.name[ grep("Tau2", my.name) ]
          )
-    
-    # Fixed a bug that all elements have to be inverted before selecting some of them
-    acov <- tryCatch( 2*solve(object$mx.fit@output$calculatedHessian)[my.name, my.name, drop=FALSE], error = function(e) e)
-    # Issue a warning instead of error message
-    if (inherits(acov, "error")) {
-      cat("Error in solving the Hessian matrix.\n")
-      warning(print(acov))
-    } else {
-      return(acov)
-    }
+    .solve(x=object$mx.fit@output$calculatedHessian, parameters=my.name) 
 }
 
 vcov.tssem1FEM <- function(object, ...) {
@@ -767,21 +759,14 @@ vcov.tssem1FEM <- function(object, ...) {
     
     if (object$cor.analysis) {
         #Hessian_S <- 0.5*mx.fit@output$calculatedHessian[vechs(ps.labels), vechs(ps.labels)]
-        acovS <- tryCatch( 2*solve(object$mx.fit@output$calculatedHessian)[vechs(ps.labels),
-                           vechs(ps.labels)], error = function(e) e)
+        acovS <- .solve(x=object$mx.fit@output$calculatedHessian, parameters=vechs(ps.labels))
     } else {
         #Hessian_S <- 0.5*mx.fit@output$calculatedHessian[vech(ps.labels), vech(ps.labels)]
-        acovS <-  tryCatch( 2*solve(object$mx.fit@output$calculatedHessian)[vech(ps.labels),
-                            vech(ps.labels)], error = function(e) e)
+        acovS <- .solve(x=object$mx.fit@output$calculatedHessian, parameters=vech(ps.labels))
     }
-    # Issue a warning instead of error message
-    if (inherits(acovS, "error")) {
-      cat("Error in solving the Hessian matrix.\n")
-      warning(print(acovS))
-    } else {
-      # Fixed a bug in a few lines later in dimnames(acovS) when acovS is a scalar
-      acovS <- as.matrix(acovS)
-    }
+
+    # Fixed a bug in a few lines later in dimnames(acovS) when acovS is a scalar
+    acovS <- as.matrix(acovS)
 
     acovS.dim <- outer(object$original.names, object$original.names, paste, sep="_")
 
@@ -791,9 +776,8 @@ vcov.tssem1FEM <- function(object, ...) {
     } else {
         psMatnames <- vech(acovS.dim)
     }
-
     dimnames(acovS) <- list(psMatnames, psMatnames)
-
+  
     acovS
 }
 
@@ -839,16 +823,9 @@ vcov.wls <- function(object, R=50, ...) {
     warning("Parametric bootstrap with ",R," replications was used to approximate the sampling covariance matrix of the parameter estimates. A better approach is to use likelihood-based confidence interval by including the intervals.type=\"LB\" argument in the analysis.\n")
         
   } else {
-    ## Select the free parameters for inversion
-    acovS <- tryCatch( 2*solve(object$mx.fit@output$calculatedHessian), error = function(e) e ) 
-
-    # Issue a warning instead of error message
-    if (inherits(acovS, "error")) {
-      cat("Error in solving the Hessian matrix.\n")
-      stop(print(acovS))
-    } 
+    acovS <- .solve(x=object$mx.fit@output$calculatedHessian)       
   }
-
+  
   my.para <- summary(object$mx.fit)$parameters[, 1:4]
   my.labels <- my.para$name
   my.order <- with(my.para, order(matrix, row, col))
@@ -856,6 +833,7 @@ vcov.wls <- function(object, R=50, ...) {
   acovS <- acovS[my.labels[my.order], my.labels[my.order]]
   my.labels <- my.labels <- gsub(paste(object$mx.model$name, ".", sep=""), "", row.names(acovS))
   dimnames(acovS) <- list(my.labels, my.labels)
+
   acovS
 }
 
@@ -874,14 +852,7 @@ vcov.reml <- function(object, ...) {
     my.name <- names(omxGetParameters(object$mx.fit))
     my.name <- my.name[!is.na(my.name)]
     # Fixed a bug that all elements have to be inverted before selecting some of them
-    acov <- tryCatch( 2*solve(object$reml@output$calculatedHessian)[my.name, my.name, drop=FALSE], error = function(e) e) 
-    
-    if (inherits(acov, "error")) {
-      cat("Error in solving the Hessian matrix.\n")
-      warning(print(acov))
-    } else {
-      return(acov)
-    }
+    .solve(x=object$reml@output$calculatedHessian, parameters=my.name)   
 }
   
 
@@ -1112,14 +1083,7 @@ vcov.meta3X <- function(object, select=c("all", "fixed", "random", "allX"), ...)
          )
     
     # Fixed a bug that all elements have to be inverted before selecting some of them
-    acov <- tryCatch( 2*solve(object$mx.fit@output$calculatedHessian)[my.name, my.name, drop=FALSE], error = function(e) e)
-    # Issue a warning instead of error message
-    if (inherits(acov, "error")) {
-      cat("Error in solving the Hessian matrix.\n")
-      warning(print(acov))
-    } else {
-      return(acov)
-    }
+    .solve(x=object$mx.fit@output$calculatedHessian, parameters=my.name)
 }
 
 coef.meta3X <- function(object, select=c("all", "fixed", "random", "allX"), ...) {
@@ -1157,14 +1121,7 @@ vcov.MxRAMModel <- function(object, ...) {
     # Remove NA labels
     my.name <- my.name[!is.na(my.name)]
     
-    acov <- tryCatch( 2*solve(object@output$calculatedHessian)[my.name, my.name, drop=FALSE], error = function(e) e)
-    # Issue a warning instead of error message
-    if (inherits(acov, "error")) {
-      cat("Error in solving the Hessian matrix.\n")
-      warning(print(acov))
-    } else {
-      return(acov)
-    }
+    .solve(x=object@output$calculatedHessian, parameters=my.name)
 }
 
 VarCorr <- function(object, ...) {

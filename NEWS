@@ -1,6 +1,21 @@
+Release 0.9.12 (January 23, 2017)
+====================================
+* Released to CRAN.
+* Explicitly stated "SLSQP" as the optimizer in metaSEM as "CSOLNP" is the default optimizer in OpenMx 2.7.4. 
+* Revised and renamed impliedSigma() to impliedR().
+* Fixed a bug in uniR2mx() that does not work for models with latent variables.
+* Added dataset Cooke16.
+* Changed solve() to chol2inv(chol()) and ginv() for matrix inversion.
+* Added dataset Boer16.
+* Added uniR1(), uniR2mx(), and uniR2lavaan().
+* Modified a variable name in Becker09.
+* Minor changes on how errors are handled in the main functions. 
+* Added datasets Nohe15A1 and Nohe15A2
+* Modified some variable names in Hunter83
+
 Release 0.9.10 (August 18, 2016)
 ====================================
-* Released to CRAN
+* Released to CRAN.
 * Added impliedSigma() to calculate the model implied correlation or covariance matrix based on the RAM model
 * Added VarCorr() to extract variance component matrix for the class meta objects.
 * Fixed a minor bug in summary.tssem1FEM that throws an error when tT is NA.
