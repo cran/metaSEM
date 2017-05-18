@@ -1,3 +1,12 @@
+Release 0.9.14 (May 18, 2017)
+====================================
+* Released to CRAN.
+* Fixed a minor bug reported by GerardCY in meta() when lm() fails to get the starting values for coef.constraints. 
+* Added rCor(), rCorPop(), rCorSam(), summary.CorPop(), and print.summary.CorPop. 
+* Fixed a minor bug reported by John Ma when there are more than 120 variables in tssem1FEM().
+* Revised the formula in calculating the standard error in uniR1() by using the second improved approximation of Schmidt and Hunter (2015, p. 101)
+* Added smdMTS() and smdMES() to calculate standardized mean differences for multiple treatment studies and for multiple end-point studies.
+
 Release 0.9.12 (January 23, 2017)
 ====================================
 * Released to CRAN.
