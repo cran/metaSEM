@@ -9,7 +9,7 @@
   analysis of the two-stage strutural equation modeling (TSSEM). \code{tssem2} is a wrapper of \code{wls}.
 }
 \usage{
-wls(Cov, asyCov, n, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
+wls(Cov, aCov, n, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
     diag.constraints=FALSE, cor.analysis=TRUE, intervals.type=c("z","LB"),
     mx.algebras=NULL, model.name=NULL, suppressWarnings=TRUE,
     silent=TRUE, run=TRUE, ...)
@@ -25,7 +25,7 @@ tssem2(tssem1.obj, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
   \item{Cov}{A \eqn{p}{p} x \eqn{p}{p} sample correlation/covariance matrix
 	where \eqn{p}{p} is the number of variables.
 }
-  \item{asyCov}{A \eqn{p*}{p*} x \eqn{p*}{p*} asymptotic sampling covariance
+  \item{aCov}{A \eqn{p*}{p*} x \eqn{p*}{p*} asymptotic sampling covariance
 	matrix of either \code{\link[OpenMx]{vechs}} \code{(Cov)} or
 	\code{\link[OpenMx]{vech}} \code{(Cov)} where \eqn{p* = p(p-1)/2 }{p*
 	  = p(p-1)/2} for correlation matrix and \eqn{p* = p(p+1)/2 }{p* = p(p+1)/2} for covariance matrix.
@@ -49,7 +49,7 @@ tssem2(tssem1.obj, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
 	error will not be generated. Parametric bootstrap is used to
 	estimate the standard error by drawing samples from \eqn{\mathcal{N}(vech(Cov), asyCov)}{N(vech(Cov), asyCov)} for covariance analysis and \eqn{\mathcal{N}(vechs(Cov), asyCov)}{N(vechs(Cov), asyCov)} for
 	correlation analysis while asyCov is treated as fixed. This process
-	is computational intensive. A better approach is to request likelihood-based
+	is computationally intensive. A better approach is to request likelihood-based
 	confidence intervals (CIs) by specifying \code{intervals.type="LB"}. 
 	If \code{diag.constraints=FALSE} and \code{cor.analysis=TRUE}, the diagonals are automatically constrained as ones by
   treating the error variances as computed values rather than as
@@ -65,7 +65,7 @@ tssem2(tssem1.obj, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
 	related to the likelihood-based CIs.
   }
   \item{mx.algebras}{A list of \code{\link[OpenMx]{mxMatrix}} or  \code{\link[OpenMx]{mxAlgebra}} objects on the \code{Amatrix},
-	\code{Smatrix} and \code{Fmatrx}. It can be used to define new functions
+	\code{Smatrix}, and \code{Fmatrx}. It can be used to define new functions
 	of parameters and their LBCIs. For example, if the regression
 	coefficients to calculate an indirect effect are stored in A[1,2] and
 	A[1,3], we may define
@@ -85,10 +85,10 @@ tssem2(tssem1.obj, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
 	"TSSEM2 (or WLS) Analysis of Covariance Structure" for \code{cor.analysis=FALSE}.
 	}
   \item{suppressWarnings}{Logical. If \code{TRUE}, warnings are
-	suppressed. Argument to be passed to \code{\link[OpenMx]{mxRun}}.}
-  \item{silent}{Logical. Argument to be passed to \code{\link[OpenMx]{mxRun}}}
+	suppressed. The argument to be passed to \code{\link[OpenMx]{mxRun}}.}
+  \item{silent}{Logical. The argument to be passed to \code{\link[OpenMx]{mxRun}}}
   \item{run}{Logical. If \code{FALSE}, only return the mx model without running the analysis.}  
-  \item{\dots}{Futher arguments to be passed to \code{\link[OpenMx]{mxRun}}.
+  \item{\dots}{Further arguments to be passed to \code{\link[OpenMx]{mxRun}}.
 }
 }
 
@@ -153,7 +153,7 @@ acovR1 <- asyCov(R1, n)
 
 ## The first 4 variables are observed while the last one is latent.
 (F1 <- create.Fmatrix(c(1,1,1,1,0), name="F1"))
-wls.fit1 <- wls(Cov=R1, asyCov=acovR1, n=n, Fmatrix=F1, Smatrix=S1, Amatrix=A1,
+wls.fit1 <- wls(Cov=R1, aCov=acovR1, n=n, Fmatrix=F1, Smatrix=S1, Amatrix=A1,
                  cor.analysis=TRUE, intervals="LB")
 summary(wls.fit1)
 
@@ -183,7 +183,7 @@ acovR2 <- asyCov(R2, n)
                free=c(TRUE,FALSE,FALSE,FALSE,TRUE,FALSE), name="S2"))
 
 ## F may be ignored as there is no latent variable.
-wls.fit2 <- wls(Cov=R2, asyCov=acovR2, n=n, Amatrix=A2, Smatrix=S2,
+wls.fit2 <- wls(Cov=R2, aCov=acovR2, n=n, Amatrix=A2, Smatrix=S2,
                 cor.analysis=TRUE, intervals="LB")
 summary(wls.fit2)
 
@@ -204,7 +204,7 @@ acovS3 <- asyCov(R3, n, cor.analysis=FALSE)
 F3 <- c(TRUE,TRUE,TRUE,TRUE,FALSE)
 (F3 <- create.Fmatrix(F3, name="F3", as.mxMatrix=FALSE))
 
-wls.fit3 <- wls(Cov=R3, asyCov=acovS3, n=n, Amatrix=A3, Smatrix=S3,
+wls.fit3 <- wls(Cov=R3, aCov=acovS3, n=n, Amatrix=A3, Smatrix=S3,
                 Fmatrix=F3, cor.analysis=FALSE)
 summary(wls.fit3)
 }

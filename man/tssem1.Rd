@@ -10,21 +10,21 @@
   respectively. \code{tssem1()} is a wrapper of these functions. 
 }
 \usage{
-tssem1(my.df, n, method=c("FEM","REM"), cor.analysis = TRUE, cluster=NULL,
+tssem1(Cov, n, method=c("FEM","REM"), cor.analysis = TRUE, cluster=NULL,
        RE.type=c("Symm", "Diag", "Zero", "User"), RE.startvalues=0.1,
        RE.lbound=1e-10, RE.constraints=NULL, I2="I2q",
        acov=c("individual", "unweighted", "weighted"),
        model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...)
-tssem1FEM(my.df, n, cor.analysis=TRUE, model.name=NULL,
+tssem1FEM(Cov, n, cor.analysis=TRUE, model.name=NULL,
           cluster=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...)
-tssem1REM(my.df, n, cor.analysis=TRUE, RE.type=c("Symm", "Diag", "Zero","User"),
+tssem1REM(Cov, n, cor.analysis=TRUE, RE.type=c("Symm", "Diag", "Zero","User"),
           RE.startvalues=0.1, RE.lbound=1e-10, RE.constraints=NULL,
           I2="I2q", acov=c("individual", "unweighted", "weighted"),
           model.name=NULL, suppressWarnings=TRUE,
           silent=TRUE, run=TRUE, ...)
 }
 \arguments{
-  \item{my.df}{A list of correlation/covariance matrices
+  \item{Cov}{A list of correlation/covariance matrices
 }
   \item{n}{A vector of sample sizes
 }
@@ -47,7 +47,7 @@ tssem1REM(my.df, n, cor.analysis=TRUE, RE.type=c("Symm", "Diag", "Zero","User"),
 	\code{"Zero"}, there is no random effects which is similar to the
 	conventional Generalized Least Squares (GLS) approach to
 	fixed-effects analysis.
-    \code{"User"}, user has to specific the variance component via the
+    \code{"User"}, user has to specify the variance component via the
 	\code{RE.constraints} argument. This argument will be ignored when \code{method="FEM"}.}
   \item{RE.startvalues}{Starting values on the
 	diagonals of the variance component of the random effects. It will be ignored when \code{method="FEM"}.}
@@ -55,7 +55,7 @@ tssem1REM(my.df, n, cor.analysis=TRUE, RE.type=c("Symm", "Diag", "Zero","User"),
 	component of the random effects. It will be ignored when
 	\code{method="FEM"}.}
   \item{RE.constraints}{A \eqn{p*}{p*} x \eqn{p*}{p*} matrix
-	specifying the variance componets of the random effects, where
+	specifying the variance components of the random effects, where
 	\eqn{p*}{p*} is the number of effect sizes. If the input
 	is not a matrix, it is converted into a matrix by
 	\code{as.matrix()}. The default is that all
@@ -67,16 +67,16 @@ tssem1REM(my.df, n, cor.analysis=TRUE, RE.type=c("Symm", "Diag", "Zero","User"),
   \item{I2}{Possible options are \code{"I2q"}, \code{"I2hm"} and
 	\code{"I2am"}. They represent the \code{I2} calculated by using a
 	typical within-study sampling variance from the Q statistic, the
-	harmonic mean and the arithmatic mean of the within-study sampling
+	harmonic mean and the arithmetic mean of the within-study sampling
 	variances (Xiong, Miller, & Morris, 2010). More than one options are possible. If \code{intervals.type="LB"}, 95\% confidence intervals on the heterogeneity indices will be constructed. 
   }
-  \item{acov}{If it is \code{individual} (the default), the sampling variance covariance
+  \item{acov}{If it is \code{individual} (the default), the sampling variance-covariance
 	matrices are calculated based on individual correlation/covariance
 	matrix. If it is either \code{unweighted} or \code{weighted}, the average
 	correlation/covariance matrix is calculated based on the unweighted
 	or weighted mean with the sample sizes. The average
 	correlation/covariance matrix is used to calculate the sampling
-	variance covariance matrices. This argument is ignored with the
+	variance-covariance matrices. This argument is ignored with the
 	\code{method="FEM"} argument.}
   \item{model.name}{A string for the model name in \code{\link[OpenMx]{mxModel}}. 
   }  
@@ -106,7 +106,7 @@ equation models. \emph{Structural Equation Modeling}, \bold{20},
 \author{Mike W.-L. Cheung <mikewlcheung@nus.edu.sg>
 }
 \note{If the \code{cluster} argument is used, it returns a list of
-  results based for each cluster.
+  results on each cluster.
 }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~

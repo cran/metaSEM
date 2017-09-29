@@ -26,13 +26,13 @@ achievement reported by Roorda et al. (2011).
 }
 \references{
   Jak, S., & Cheung, M. W.-L. (2015). Addressing heterogeneity in meta-analytic structural equation modeling using subgroup
-analysis. \emph{Manuscript in preparation}.
+analysis. \emph{Manuscript submitted for publication}.
 }
 \examples{
 \dontrun{
 
 ## Random-effects model: First stage analysis
-random1 <- tssem1(my.df = Roorda11$data, n = Roorda11$n, method = "REM", RE.type = "Diag")
+random1 <- tssem1(Cov = Roorda11$data, n = Roorda11$n, method = "REM", RE.type = "Diag")
 summary(random1)
 
 varnames <- c("pos", "neg", "enga", "achiev")
