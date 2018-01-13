@@ -1,7 +1,7 @@
 lavaan2RAM <- function(model, obs.variables = NULL, A.notation="ON", S.notation="WITH",
                        M.notation="mean", auto.var = TRUE, std.lv = TRUE, ...) {
-    if (!requireNamespace("lavaan", quietly=TRUE))    
-        stop("\"lavaan\" package is required for this function.")
+    ## if (!requireNamespace("lavaan", quietly=TRUE))    
+    ##     stop("\"lavaan\" package is required for this function.")
 
     ## Default: fix the latent independent variables at 1
     my.model <- lavaan::lavaanify(model, fixed.x = FALSE, auto.var=auto.var, std.lv=std.lv, ...)
@@ -13,11 +13,17 @@ lavaan2RAM <- function(model, obs.variables = NULL, A.notation="ON", S.notation=
     if (length(grep("^\\.", my.model$lhs)) >0 ) my.model <- my.model[-grep("^\\.", my.model$lhs), ]
     ## label as the variable labels
     #my.model$label <- with(my.model, ifelse(label=="", yes=plabel, no=label))
+    
     ## set the starting values in A as 0 if NA
-    my.model[(my.model$op=="=~"|my.model$op=="~")&is.na(my.model$ustart), ]$ustart <- 0
+    if (any((my.model$op=="=~"|my.model$op=="~")&is.na(my.model$ustart))) {
+        my.model[(my.model$op=="=~"|my.model$op=="~")&is.na(my.model$ustart), ]$ustart <- 0
+    }
+    
     ## set the starting values in S and free parameters as 0 if NA
-    my.model[my.model$op=="~~"&is.na(my.model$ustart)&my.model$free!=0, ]$ustart <- 0
-  
+    if (any((my.model$op=="~~"&is.na(my.model$ustart)&my.model$free!=0))) {
+        my.model[my.model$op=="~~"&is.na(my.model$ustart)&my.model$free!=0, ]$ustart <- 0
+    }
+        
     ## all variables
     all.var <- sort(unique(c(my.model$lhs, my.model$rhs)))
     ## latent variables: (with indicators)

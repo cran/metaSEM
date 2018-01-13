@@ -14,7 +14,7 @@ as.mxMatrix(x, name, ...)
   }
   \item{name}{An optional character string as the name of the
 	MxMatrix object created by mxModel function. If the \code{name} is missing,
-  the name of \code{x} will be used.}
+	the name of \code{x} will be used.}
   \item{\dots}{Further arguments to be passed to
 	\code{\link[OpenMx]{mxMatrix}}. It should be noted that \code{type},
 	  \code{nrow}, \code{ncol}, \code{values}, \code{free}, \code{name}
@@ -24,7 +24,7 @@ as.mxMatrix(x, name, ...)
 }
 }
 \details{If there are non-numeric values in \code{x}, they are treated
-  as the labels of the free parameters. If an "*" is
+  as the labels of the free parameters. If a "*" is
   present, the numeric value on the left-hand side will be treated as
   the starting value for a free parameter or a fixed value for a fixed parameter. If it is a matrix of numeric values, there are
   no free parameters in the output matrix. 

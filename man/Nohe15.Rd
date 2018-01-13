@@ -33,6 +33,9 @@ A list of data with the following structure:
 }
 \examples{
 \dontrun{
+## Set seed for replicability    
+set.seed(23891)
+    
 ## Table A1
 randA1a <- tssem1(Nohe15A1$data, Nohe15A1$n, method="REM", RE.type="Diag")
 summary(randA1a)
@@ -77,6 +80,9 @@ RAM2
 randA2b <- tssem2(randA2a, Amatrix=RAM2$A, Smatrix=RAM2$S)
 summary(randA2b)
 
+## Estimate the heterogeneity of the parameter estimates
+tssemParaVar(randA1a, randA2b)    
+    
 my.plotA2 <- meta2semPlot(randA2b)
 semPlot::semPaths(my.plotA2, whatLabels="est", sizeMan=8, edge.label.cex=1.5, color="yellow",
                   edge.color = "black", weighted=FALSE)
@@ -92,7 +98,7 @@ uni1 <- uniR1(Nohe15A1$data, Nohe15A1$n)
 uni1
 
 ## Generate random correlation matrices
-boot.cor <- bootMASEM1(uni1, Rep=50)
+boot.cor <- bootuniR1(uni1, Rep=50)
 
 ## Display the quality of the generated correlation matrices
 summary(boot.cor)
@@ -103,14 +109,14 @@ model1 <- 'W2 + S2 ~ W1 + S1'
 ## Use the harmonic mean of the sample sizes as n in SEM
 n <- uni1$n.harmonic    
     
-boot.fit1 <- bootMASEM2(model=model1, data=boot.cor, n=n)
+boot.fit1 <- bootuniR2(model=model1, data=boot.cor, n=n)
 summary(boot.fit1)
 
 ## Proposed model with equal regression coefficients
 model2 <- 'W2 ~ Same*W1 + Cross*S1
            S2 ~ Cross*W1 + Same*S1'
 
-boot.fit2 <- bootMASEM2(model=model2, data=boot.cor, n=n)
+boot.fit2 <- bootuniR2(model=model2, data=boot.cor, n=n)
 summary(boot.fit2)
     
 }
