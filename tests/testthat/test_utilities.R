@@ -82,3 +82,279 @@ test_that("bdiagMat() works correctly", {
                                   "0", "0", "e", "f"),
                                 ncol=4, nrow=3, byrow=TRUE))
 })
+
+test_that("list2matrix() works correctly", {
+    x1 <- matrix(c(1,0.5,0.4,0.5,1,0.2,0.4,0.2,1), ncol=3)
+    x2 <- matrix(c(1,0.4,NA,0.4,1,NA,NA,NA,NA), ncol=3)  
+
+    expect_identical(list2matrix(list(x1, x2), diag=FALSE),
+                     matrix(c(0.5, 0.4, 0.2,
+                              0.4, NA, NA),
+                            byrow=TRUE, nrow=2, ncol=3,
+                            dimnames=list(NULL, c("x2_x1", "x3_x1", "x3_x2"))))
+
+    expect_identical(list2matrix(list(x1, x2), diag=TRUE),
+                     matrix(c(1, 0.5, 0.4, 1,  0.2, 1,
+                              1, 0.4, NA, 1, NA, NA),
+                            byrow=TRUE, nrow=2, ncol=6,
+                            dimnames=list(NULL, c("x1_x1", "x2_x1", "x3_x1",
+                                                  "x2_x2", "x3_x2", "x3_x3"))))    
+
+    dimnames(x1) <- list( c("x","y","z"), c("x","y","z") )
+    dimnames(x2) <- list( c("x","y","z"), c("x","y","z") )
+
+    expect_identical(list2matrix(list(x1, x2), diag=FALSE),
+                     matrix(c(0.5, 0.4, 0.2,
+                              0.4, NA, NA),
+                            byrow=TRUE, nrow=2, ncol=3,
+                            dimnames=list(NULL, c("y_x", "z_x", "z_y"))))
+    
+    expect_identical(list2matrix(list(x1, x2), diag=TRUE),
+                     matrix(c(1, 0.5, 0.4, 1,  0.2, 1,
+                              1, 0.4, NA, 1, NA, NA),
+                            byrow=TRUE, nrow=2, ncol=6,
+                            dimnames=list(NULL, c("x_x", "y_x", "z_x",
+                                                  "y_y", "z_y", "z_z"))))  
+
+    x3 <- matrix(c(1,0.5,0.5,1), ncol=2)
+    x4 <- matrix(c(1,0.4,0.4,1), ncol=2)  
+
+    expect_identical(list2matrix(list(x3, x4), diag=FALSE),
+                     matrix(c(0.5,
+                              0.4),
+                            byrow=TRUE, nrow=2, ncol=1,
+                            dimnames=list(NULL, c("x2_x1"))))
+
+    expect_identical(list2matrix(list(x3, x4), diag=TRUE),
+                     matrix(c(1, 0.5, 1,
+                              1, 0.4, 1),
+                            byrow=TRUE, nrow=2, ncol=3,
+                            dimnames=list(NULL, c("x1_x1", "x2_x1", "x2_x2"))))    
+
+    dimnames(x3) <- list( c("x","y"), c("x","y") )
+    dimnames(x4) <- list( c("x","y"), c("x","y") )
+
+    expect_identical(list2matrix(list(x3, x4), diag=FALSE),
+                     matrix(c(0.5,
+                              0.4),
+                            byrow=TRUE, nrow=2, ncol=1,
+                            dimnames=list(NULL, c("y_x"))))
+
+    expect_identical(list2matrix(list(x3, x4), diag=TRUE),
+                     matrix(c(1, 0.5, 1,
+                              1, 0.4, 1),
+                            byrow=TRUE, nrow=2, ncol=3,
+                            dimnames=list(NULL, c("x_x", "y_x", "y_y"))))
+})
+
+test_that("smdMTS() works correctly", {
+    ## Means
+    m <- c(5,NA,7,9,NA)
+    ## Sample variances
+    v <- c(10,0,11,12,0)
+    ## Sample sizes
+    n <- c(50,0,52,53,0)
+
+    index <- !is.na(m)
+    ## index.y: index on comparisons against the first group
+    index.y <- index[-1]    
+
+    ## Comparing against the first group
+    x1 <- smdMTS(m=m, v=v, n=n, homogeneity="variance", bias.adjust=TRUE,
+                 all.comparisons=FALSE, list.output=TRUE, lavaan.output=FALSE)
+
+    x2 <- smdMTS(m=m[index], v=v[index], n=n[index], homogeneity="variance",
+                 bias.adjust=TRUE, all.comparisons=FALSE,
+                 list.output=TRUE, lavaan.output=FALSE)    
+
+    ## Check NA in y
+    expect_identical(!index.y, unname(is.na(x1$y))) 
+    ## Check NA in V
+    expect_identical(TRUE, all(is.na(x1$V[!index.y, !index.y])))  
+    ## Check the content in y
+    expect_identical(unname(x1$y[!is.na(x1$y)]), unname(x2$y))
+    ## Check the content in V
+    expect_identical(unname(x1$V[!is.na(x1$y), !is.na(x1$y)]), unname(x2$V))
+
+    ## Conducting all comparisons
+    x3 <- suppressWarnings( smdMTS(m=m, v=v, n=n, homogeneity="none",
+                                   bias.adjust=FALSE, all.comparisons=TRUE,
+                                   list.output=TRUE, lavaan.output=FALSE) )
+
+    x4 <- suppressWarnings( smdMTS(m=m[index], v=v[index], n=n[index],
+                                   homogeneity="none", bias.adjust=FALSE,
+                                   all.comparisons=TRUE, list.output=TRUE,
+                                   lavaan.output=FALSE) )
+    ## index for y
+    k <- length(index)
+    index.y <- rep(NA, k*(k-1)/2)
+    p <- 1
+    for (i in 1:(k-1)) {
+        for (j in (i+1):k) {
+            index.y[p] <- index[i]&index[j]
+            p <- p+1
+        }
+    }
+
+    ## Check NA in y
+    expect_identical(!index.y, unname(is.na(x3$y)))
+    ## Check NA in y
+    expect_identical(TRUE, all(is.na(x3$V[!index.y, !index.y])))
+    ## Check the content in y
+    expect_identical(unname(x3$y[!is.na(x3$y)]), unname(x4$y))
+    ## Check the content in V
+    expect_identical(unname(x3$V[!is.na(x3$y), !is.na(x3$y)]), unname(x4$V))
+})
+
+test_that("smdMES() works correctly", {
+    ## Sample means of the first group
+    m1 <- c(4, NA, 5)
+    ## Sample means of the second group
+    m2 <- c(5, NA, 6)
+
+    index <- !is.na(m1)
+    
+    ## Sample covariance matrices
+    V1 <- V2 <- matrix(NA, ncol=3, nrow=3)
+    V1[index, index] <- c(3,2,2,3)
+    V2[index, index] <- c(3.5,2.1,2.1,3.5)
+
+    ## Sample size in Group 1
+    n1 <- 20
+
+    ## Sample size in Group 2
+    n2 <- 25
+    
+    ## Assuming homogeneity of covariance matrix
+    x1 <- smdMES(m=m1, m2=m2, V1=V1, V2=V2, n1=n1, n2=n2, homogeneity="covariance",
+                 bias.adjust=TRUE, list.output=TRUE, lavaan.output=FALSE)
+    x2 <- smdMES(m=m1[index], m2=m2[index], V1=V1[index, index],
+                 V2=V2[index, index], n1=n1, n2=n2, homogeneity="covariance",
+                 bias.adjust=TRUE, list.output=TRUE, lavaan.output=FALSE)
+    
+    ## Check NA in y
+    expect_identical(!index, unname(is.na(x1$y))) 
+    ## Check NA in V
+    expect_identical(TRUE, all(is.na(x1$V[!index, !index])))    
+    ## Check the content in y
+    expect_identical(unname(x1$y[!is.na(x1$y)]), unname(x2$y))
+    ## Check the content in V
+    expect_identical(unname(x1$V[!is.na(x1$y), !is.na(x1$y)]), unname(x2$V))
+
+    ## Without assuming homogeneity of covariance matrix
+    x3 <- smdMES(m=m1, m2=m2, V1=V1, V2=V2, n1=n1, n2=n2, homogeneity="none",
+                 bias.adjust=FALSE, list.output=TRUE, lavaan.output=FALSE)
+    x4 <- smdMES(m=m1[index], m2=m2[index], V1=V1[index, index],
+                 V2=V2[index, index], n1=n1, n2=n2, homogeneity="none",
+                 bias.adjust=FALSE, list.output=TRUE, lavaan.output=FALSE)
+    
+    ## Check NA in y
+    expect_identical(!index, unname(is.na(x3$y))) 
+    ## Check NA in V
+    expect_identical(TRUE, all(is.na(x3$V[!index, !index])))    
+    ## Check the content in y
+    expect_identical(unname(x3$y[!is.na(x3$y)]), unname(x4$y))
+    ## Check the content in V
+    expect_identical(unname(x3$V[!is.na(x3$y), !is.na(x3$y)]), unname(x4$V))
+
+    
+})
+
+test_that("checkRAM() works correctly", {
+    ## Checking A
+    
+    ## OK
+    A1 <- matrix(c("0", "0", "0",
+                   "1*a", "0", "0",
+                   "1*b", "1*c", "0"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_silent(checkRAM(Amatrix=A1))
+    expect_silent(checkRAM(Amatrix=as.mxMatrix(A1)))
+
+    ## Diagonals are not zero
+    A2 <- matrix(c("0", "0", "0",
+                   "1*a", "1", "0",
+                   "1*b", "1*c", "0"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_warning(checkRAM(Amatrix=A2))
+    expect_warning(checkRAM(Amatrix=as.mxMatrix(A2)))
+    
+    A3 <- matrix(c("0", "0", "0",
+                   "1*a", "0*d", "0",
+                   "1*b", "1*c", "0"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_warning(checkRAM(Amatrix=A3))
+    expect_warning(checkRAM(Amatrix=as.mxMatrix(A3)))
+
+    ## Non-recursive model
+    A4 <- matrix(c("0", "0*d", "0",
+                   "1*a", "0", "0",
+                   "1*b", "1*c", "0"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_warning(checkRAM(Amatrix=A4))
+    expect_warning(checkRAM(Amatrix=as.mxMatrix(A4)))
+
+    ## Checking S
+    
+    ## OK
+    S1 <- matrix(c("1", "0", "0",
+                   "0", "0*a", "0*b",
+                   "0", "0*b", "0*c"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_silent(checkRAM(Smatrix=S1, cor.analysis=TRUE))
+    expect_silent(checkRAM(Smatrix=as.mxMatrix(S1), cor.analysis=TRUE)) 
+    expect_silent(checkRAM(Smatrix=S1, cor.analysis=FALSE))
+    expect_silent(checkRAM(Smatrix=as.mxMatrix(S1), cor.analysis=FALSE))
+    
+    ## Not symmetric in labels
+    S2 <- matrix(c("1", "0", "0",
+                   "0", "0*a", "0*b1",
+                   "0", "0*b2", "0*c"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_warning(checkRAM(Smatrix=S2, cor.analysis=TRUE))
+    expect_warning(checkRAM(Smatrix=as.mxMatrix(S2), cor.analysis=TRUE))
+    expect_warning(checkRAM(Smatrix=S2, cor.analysis=FALSE))
+    expect_warning(checkRAM(Smatrix=as.mxMatrix(S2), cor.analysis=FALSE))
+    
+    ## Not symmetric in values
+    S3 <- matrix(c("1", "0", "0",
+                   "1", "0*a", "0*b",
+                   "0", "0*b", "0*c"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_warning(checkRAM(Smatrix=S3, cor.analysis=TRUE))
+    expect_warning(checkRAM(Smatrix=as.mxMatrix(S3), cor.analysis=TRUE))
+    expect_warning(checkRAM(Smatrix=S3, cor.analysis=FALSE))
+    expect_warning(checkRAM(Smatrix=as.mxMatrix(S3), cor.analysis=FALSE))    
+
+    ## Not symmetric in free parameters
+    S4 <- matrix(c("1", "0", "0",
+                   "1*d", "0*a", "0*b",
+                   "0", "0*b", "0*c"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_warning(checkRAM(Smatrix=S4, cor.analysis=TRUE))
+    expect_warning(checkRAM(Smatrix=as.mxMatrix(S4), cor.analysis=TRUE))
+    expect_warning(checkRAM(Smatrix=S4, cor.analysis=FALSE))
+    expect_warning(checkRAM(Smatrix=as.mxMatrix(S4), cor.analysis=FALSE))    
+ 
+    ## Checking both A and S
+    ## OK
+    expect_silent(checkRAM(A=A1, S=S1, cor.analysis=TRUE))
+
+    ## Variance of the IV is a free parameter
+    S5 <- matrix(c("1*Err_IV", "0", "0",
+                   "0", "0*a", "0*b",
+                   "0", "0*b", "0*c"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_warning(checkRAM(Amatrix=A1, Smatrix=S5, cor.analysis=TRUE))
+    ## OK when S is for a covariance structure
+    expect_silent(checkRAM(Amatrix=A1, Smatrix=S5, cor.analysis=FALSE))
+    
+    ## Variance of the IV is not fixed at 1
+    S6 <- matrix(c("0", "0", "0",
+                   "0", "0*a", "0*b",
+                   "0", "0*b", "0*c"),
+                 nrow=3, ncol=3, byrow=TRUE)
+    expect_warning(checkRAM(Amatrix=A1, Smatrix=S6, cor.analysis=TRUE))
+    ## OK when S is for a covariance structure (fewer checking)
+    expect_silent(checkRAM(Amatrix=A1, Smatrix=S6, cor.analysis=FALSE))     
+})
