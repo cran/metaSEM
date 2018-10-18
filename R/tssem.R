@@ -214,10 +214,6 @@ tssem1REM <- function(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero
   switch( RE.type,
          Symm = mx.fit <- meta(y=ES, v=acovR, model.name=model.name, I2=I2, RE.startvalues=RE.startvalues,
                                RE.lbound=RE.lbound, suppressWarnings=TRUE, silent=silent, run=run, ...),
-## Prior to R-3.0.0
-##       Diag = mx.fit <- meta(y=ES, v=acovR, model.name=model.name, I2=I2,
-##                             RE.constraints=Diag(x=paste(RE.startvalues, "*Tau2_", 1:no.es, "_", 1:no.es, sep=""),
-##                                            nrow=no.es, ncol=no.es), RE.lbound=RE.lbound),
          Diag = mx.fit <- meta(y=ES, v=acovR, model.name=model.name, I2=I2,
                                RE.constraints=Diag(paste0(RE.startvalues, "*Tau2_", 1:no.es, "_", 1:no.es)),
                                RE.lbound=RE.lbound, suppressWarnings=TRUE, silent=silent, run=run, ...),
@@ -259,7 +255,7 @@ tssem1 <- function(Cov, n, method=c("REM", "FEM"), cor.analysis=TRUE, cluster=NU
   out
 }
 
-
+## Known bug: wls() will fall into loop when the Amatrix is zero
 wls <- function(Cov, aCov, n, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL, 
                 diag.constraints=FALSE, cor.analysis=TRUE, intervals.type=c("z", "LB"), 
                 mx.algebras=NULL, model.name=NULL, suppressWarnings=TRUE, 

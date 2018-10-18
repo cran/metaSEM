@@ -5,16 +5,17 @@
 \title{Meta-Analysis using Structural Equation Modeling
 }
 \description{A collection of functions for conducting meta-analysis using a
-             structural equation modeling (SEM) approach via the 'OpenMx' package.
-             It also implements the two-stage SEM approach to conduct meta-analytic
-             structural equation modeling on correlation and covariance matrices. 
+             structural equation modeling (SEM) approach via the 'OpenMx' and
+             'lavaan' packages. It also implements various procedures to
+			 perform meta-analytic structural equation modeling on the
+             correlation and covariance matrices.
 }
 \details{
 \tabular{ll}{
 Package: \tab metaSEM\cr
 Type: \tab Package\cr
-Version: \tab 1.1.0\cr
-Date: \tab 2018-05-09\cr
+Version: \tab 1.2.0\cr
+Date: \tab 2018-10-18\cr
 License: \tab GPL (>=2)\cr
 LazyLoad: \tab yes\cr
 }
@@ -42,7 +43,13 @@ Cheung, M. W.-L. (2015). metaSEM: An R package for meta-analysis using structura
 
 Cheung, M. W.-L. (2015). \emph{Meta-Analysis: A Structural Equation Modeling Approach}. Chichester, West Sussex: John Wiley & Sons, Inc.
 
-Cheung, M. W.-L. (in press). Issues in solving the problem of effect size heterogeneity in meta-analytic structural equation modeling: A commentary and simulation study on Yu, Downes, Carter, and O'Boyle (2016). \emph{Journal of Applied Psychology}.
+Cheung, M. W.-L. (2018). Issues in solving the problem of effect size
+heterogeneity in meta-analytic structural equation modeling: A
+commentary and simulation study on Yu, Downes, Carter, and O'Boyle (2016). \emph{Journal of Applied Psychology}, \bold{103}, 787-803.
+
+Cheung, M. W.-L. (2018). Computing multivariate effect sizes and their sampling covariance matrices with structural equation modeling: Theory, examples, and computer simulations. \emph{Frontiers in Psychology}, \bold{9}(1387). https://doi.org/10.3389/fpsyg.2018.01387
+
+Cheung, M. W.-L. (2018). Some reflections on combining meta-analysis and structural equation modeling. \emph{Research Synthesis Methods}, \bold{0}(0).
 
 Cheung, M. W.-L., & Chan, W. (2004). Testing dependent correlation coefficients via structural equation modeling. \emph{Organizational Research Methods}, \bold{7}, 206-223.
 
@@ -52,7 +59,7 @@ Cheung, M. W.-L., & Chan, W. (2009). A two-stage approach to synthesizing covari
 
 Cheung, M. W.-L., & Cheung, S.-F. (2016). Random-effects models for meta-analytic structural equation modeling: Review, issues, and illustrations. \emph{Research Synthesis Methods}, \bold{7}, 140-155.
 
-Jak, S, & Cheung, M. W.-L. (in press). Testing moderator hypotheses in meta-analytic structural equation modeling using subgroup analysis. \emph{Behavior Research Methods}.
+Jak, S, & Cheung, M. W.-L. (2018). Testing moderator hypotheses in meta-analytic structural equation modeling using subgroup analysis. \emph{Behavior Research Methods}, \bold{50}, 1359-1373.
 }
 \keyword{ package }
 

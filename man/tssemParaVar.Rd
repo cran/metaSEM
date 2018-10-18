@@ -40,15 +40,15 @@ method is \code{delta}.
 \value{Either a \code{data.frame} or \code{matrices} of the output.
 }
 \details{
-  The bootstrap method is based on the discussion in Cheung (in press)
+  The bootstrap method is based on the discussion in Cheung (2018)
 and Yu et al. (2016). The delta method is an alternative method to
 obtain the heterogeneity.
 }
 \references{
-   Cheung, M. W.-L. (in press). Issues in solving the problem of effect size
-  heterogeneity in meta-analytic structural equation modeling:
-  A commentary and simulation study on Yu, Downes, Carter, and O'Boyle (2016). 
-  \emph{Journal of Applied Psychology}.
+  Cheung, M. W.-L. (2018). Issues in solving the problem of effect size
+heterogeneity in meta-analytic structural equation modeling: A
+commentary and simulation study on Yu, Downes, Carter, and O'Boyle
+(2016). \emph{Journal of Applied Psychology}, \bold{103}, 787-803.
 
   Yu, J. (Joya), Downes, P. E., Carter, K. M., & O'Boyle,
   E. H. (2016). The problem of effect size heterogeneity 
