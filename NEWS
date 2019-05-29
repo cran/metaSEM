@@ -1,5 +1,12 @@
+Release 1.2.2 (May 29, 2019)
+====================================
+* Released to CRAN.
+* Added dataset Stadler15.
+* Added create.mxModel()
+
 Release 1.2.0 (Oct 18, 2018)
 ====================================
+* Released to CRAN.
 * Added .onLoad()
 * Added osmasem() and its related functions.
 * Added the argument type=c("tssem", "osmasem") in pattern.na().

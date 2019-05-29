@@ -8,7 +8,7 @@
 osmasem(model.name="osmasem", Mmatrix, Tmatrix, data,
         intervals.type=c("z", "LB"), mxModel.Args=NULL,
         mxRun.Args=NULL, suppressWarnings=TRUE,
-        silent=FALSE, run=TRUE, ...)
+        silent=TRUE, run=TRUE, ...)
 }
 \arguments{
   \item{model.name}{A string for the model name in \code{\link[OpenMx]{mxModel}}. 
@@ -26,7 +26,7 @@ osmasem(model.name="osmasem", Mmatrix, Tmatrix, data,
 \item{mxRun.Args}{A list of arguments passed to \code{\link[OpenMx]{mxRun}}.}
   \item{suppressWarnings}{Logical. If it is \code{TRUE}, warnings are
 	suppressed. This argument is passed to \code{\link[OpenMx]{mxRun}}.}
-  \item{silent}{Logical. The argument is passed to \code{\link[OpenMx]{mxRun}}}
+  \item{silent}{Logical. An argument is passed to \code{\link[OpenMx]{mxRun}}}
   \item{run}{Logical. If \code{FALSE}, only return the mx model without running the analysis.}
   \item{\dots}{Not used yet.}
   
@@ -36,6 +36,10 @@ osmasem(model.name="osmasem", Mmatrix, Tmatrix, data,
 
 \author{Mike W.-L. Cheung <mikewlcheung@nus.edu.sg>
 }
+
+\references{
+Jak, S., & Cheung, M. W. (2018). Meta-analytic structural equation modeling with moderating effects on SEM parameters. https://doi.org/10.31234/osf.io/ce85j
+}  
 \seealso{ \code{\link[metaSEM]{Cor2DataFrame}}, \code{\link[metaSEM]{create.vechsR}},
   \code{\link[metaSEM]{create.Tau2}}, \code{\link[metaSEM]{create.V}}, \code{\link[metaSEM]{Nohe15}}
 }
