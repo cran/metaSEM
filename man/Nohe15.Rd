@@ -131,7 +131,7 @@ summary(boot.fit2)
 my.df <- Cor2DataFrame(Nohe15A1$data, Nohe15A1$n)
 
 ## Add the centered Lag as a moderator
-my.df$data <- data.frame(my.df$data, Lag=scale(Nohe15A1$Lag, scale=FALSE),
+my.df$data <- data.frame(my.df$data, Lag=scale(Nohe15A1$Lag),
                          check.names=FALSE)
 head(my.df$data)
 

@@ -1,5 +1,6 @@
 ## Easy creation of mx models
-## Note. Dimension names of variables are assumed in the RAM$F
+## Note. Dimension names of variables are assumed stored in RAM$F;
+## otherwise, they have to be specified in var.names. 
 create.mxModel <- function(model.name="mxModel", RAM=NULL, Amatrix=NULL,
                            Smatrix=NULL, Fmatrix=NULL, Mmatrix=NULL,
                            Vmatrix=NULL, data, intervals.type = c("z", "LB"),
@@ -21,19 +22,23 @@ create.mxModel <- function(model.name="mxModel", RAM=NULL, Amatrix=NULL,
         Mmatrix <- as.mxMatrix(RAM$M, name="Mmatrix")
     } else {
         if (is.matrix(Amatrix)) {
-            Amatrix <- as.mxMatrix(Amatrix)
+            Amatrix <- as.mxMatrix(Amatrix, name="Amatrix")
+        } else {    
             Amatrix@name <- "Amatrix"
         }
         if (is.matrix(Smatrix)) {
-            Smatrix <- as.mxMatrix(Smatrix)
+            Smatrix <- as.mxMatrix(Smatrix, name="Smatrix")
+        } else {    
             Smatrix@name <- "Smatrix"
         }
         if (is.matrix(Fmatrix)) {
-            Fmatrix <- as.mxMatrix(Fmatrix)
+            Fmatrix <- as.mxMatrix(Fmatrix, name="Fmatrix")
+        } else {    
             Fmatrix@name <- "Fmatrix"
         }
         if (is.matrix(Mmatrix)) {
-            Mmatrix <- as.mxMatrix(Mmatrix)
+            Mmatrix <- as.mxMatrix(Mmatrix, name="Mmatrix")
+        } else {    
             Mmatrix@name <- "Mmatrix"
         }        
     }
@@ -57,10 +62,17 @@ create.mxModel <- function(model.name="mxModel", RAM=NULL, Amatrix=NULL,
     } else {
         Sfull <- mxAlgebra(Smatrix, name="Sfull")
     }
+
+    ## If matrix or data.frame is provided, setup mxData
+    ## Otherwise, users have to setup mxData()
+    if (is.data.frame(data) | is.matrix(data)) {
+        mx.data <- mxData(observed=data, type="raw")
+    } else {
+        mx.data <- data
+    }    
     
     mx.model <- mxModel(model.name, Amatrix, Smatrix, Fmatrix, Mmatrix,
-                        Vmatrix, Sfull, mxData(observed=data, type="raw"), 
-                        mxFitFunctionML(),
+                        Vmatrix, Sfull, mx.data, mxFitFunctionML(),
                         mxCI(c("Amatrix", "Smatrix", "Mmatrix")),
                         mxExpectationRAM(A="Amatrix", S="Sfull", F="Fmatrix",
                                          M="Mmatrix",

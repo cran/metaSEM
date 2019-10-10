@@ -1,4 +1,4 @@
-summary.wls <- function(object, df.adjustment=0, R=50, ...) {
+summary.wls <- function(object, df.adjustment=0, ...) {
     if (!is.element("wls", class(object)))
       stop("\"object\" must be an object of class \"wls\".")
 
@@ -70,9 +70,9 @@ summary.wls <- function(object, df.adjustment=0, R=50, ...) {
     ## Unsafe to check my.mx$CI
     if (object$intervals.type=="z") {
         
-      ## Since no SE, parametric bootstrap is used
+      ## Use OpenMx's vcov
       if (object$diag.constraints)
-        my.para$Std.Error <- sqrt(Diag(vcov.wls(object, R=R)))
+        my.para$Std.Error <- sqrt(Diag(vcov.wls(object)))
         
       my.para$lbound <- my.para$Estimate - qnorm(.975)*my.para$Std.Error
       my.para$ubound <- my.para$Estimate + qnorm(.975)*my.para$Std.Error
@@ -379,10 +379,10 @@ print.tssem1REM <- function(x, ...) {
     print(summary.default(x), ...)
 }
 
-summary.tssem1REM <- function(object, ...) {
+summary.tssem1REM <- function(object, robust=FALSE, ...) {
   if (!is.element("tssem1REM", class(object)))
     stop("\"object\" must be an object of class \"tssem1REM\".")
-  summary.meta(object)
+  summary.meta(object, robust=robust)
 }
    
 print.wls <- function(x, ...) {
@@ -406,7 +406,7 @@ print.meta <- function(x, ...) {
     print(summary.default(x), ...)
 }
 
-summary.meta <- function(object, homoStat=TRUE, ...) {
+summary.meta <- function(object, homoStat=TRUE, robust=FALSE, ...) {
     if (!is.element("meta", class(object)))
       stop("\"object\" must be an object of class \"meta\".")
 
@@ -421,13 +421,21 @@ summary.meta <- function(object, homoStat=TRUE, ...) {
     
     # Determine if CIs on parameter estimates are present
     if (object$intervals.type=="z") {
-      my.para$lbound <- my.para$Estimate - qnorm(.975)*my.para$Std.Error
-      my.para$ubound <- my.para$Estimate + qnorm(.975)*my.para$Std.Error
-      # remove rows with missing labels
-      ## my.para <- my.para[!is.na(my.para$label), ,drop=FALSE]
-      ## my.para <- my.para[order(my.para$label), , drop=FALSE]
-      coefficients <- my.para[, -c(1:4), drop=FALSE]
-      dimnames(coefficients)[[1]] <- my.para$name
+
+        ## Replace the SEs with robust SEs
+        if (robust) {
+            my.robust <- suppressMessages(imxRobustSE(object$mx.fit))
+            my.para[, "Std.Error"] <- my.robust[my.para$name]
+        }
+        
+        my.para$lbound <- my.para$Estimate - qnorm(.975)*my.para$Std.Error
+        my.para$ubound <- my.para$Estimate + qnorm(.975)*my.para$Std.Error
+        ## remove rows with missing labels
+        ## my.para <- my.para[!is.na(my.para$label), ,drop=FALSE]
+        ## my.para <- my.para[order(my.para$label), , drop=FALSE]
+        coefficients <- my.para[, -c(1:4), drop=FALSE]
+        dimnames(coefficients)[[1]] <- my.para$name
+      
     } else {
       ## # model.name: may vary in diff models
       ## ## FIXME: it may break down when model.name is a variable.
@@ -501,7 +509,8 @@ summary.meta <- function(object, homoStat=TRUE, ...) {
                 I2=object$I2, I2.values=I2.values, R2=object$R2, R2.values=R2.values, no.studies=my.mx$numObs,
                 obsStat=my.mx$observedStatistics, estPara=my.mx$estimatedParameters,
                 df=my.mx$degreesOfFreedom, Minus2LL=my.mx$Minus2LogLikelihood,
-                coefficients=coefficients, Mx.status1=object$mx.fit@output$status[[1]])
+                coefficients=coefficients, Mx.status1=object$mx.fit@output$status[[1]],
+                robust=robust)
     class(out) <- "summary.meta"
     out
 }
@@ -524,7 +533,7 @@ print.summary.meta <- function(x, ...) {
     
     cat("95% confidence intervals: ")
     switch(x$intervals.type,
-           z = cat("z statistic approximation"),
+           z = cat("z statistic approximation (robust=", x$robust, ")", sep=""),
            LB = cat("Likelihood-based statistic") )
 
     cat("\nCoefficients:\n")
@@ -738,13 +747,14 @@ print.reml <- function(x, ...) {
 }
 
 
-vcov.meta <- function(object, select=c("all", "fixed", "random"), ...) {
+vcov.meta <- function(object, select=c("all", "fixed", "random"),
+                      robust=FALSE, ...) {
     if (!is.element("meta", class(object)))
     stop("\"object\" must be an object of class \"meta\".")
 
     # labels of the parameters    
     ## my.name <- summary(object$mx.fit)$parameters$name
-    my.name <- names( omxGetParameters(object$mx.fit) )
+    my.name <- names(omxGetParameters(object$mx.fit))
     my.name <- my.name[!is.na(my.name)]
     
     select <- match.arg(select)
@@ -753,7 +763,14 @@ vcov.meta <- function(object, select=c("all", "fixed", "random"), ...) {
          fixed =  my.name <- my.name[ grep("Intercept|Slope", my.name) ],
          random = my.name <- my.name[ grep("Tau2", my.name) ]
          )
-    .solve(x=object$mx.fit@output$calculatedHessian, parameters=my.name) 
+
+    if (robust) {
+        out <- suppressMessages(imxRobustSE(object$mx.fit, details=TRUE))$cov
+        out <- out[my.name, my.name]
+    } else {
+        out <- .solve(x=object$mx.fit@output$calculatedHessian, parameters=my.name)
+    }
+    out
 }
 
 vcov.tssem1FEM <- function(object, ...) {
@@ -796,60 +813,61 @@ vcov.tssem1FEM.cluster <- function(object, ...) {
   lapply(object, vcov.tssem1FEM)
 }  
 
-vcov.tssem1REM <- function(object, select=c("all", "fixed", "random"), ...) {
+vcov.tssem1REM <- function(object, select=c("all", "fixed", "random"),
+                           robust=FALSE, ...) {
   if (!is.element("tssem1REM", class(object)))
     stop("\"object\" must be an object of class \"tssem1REM\".")
-  vcov.meta(object, select, ...)
+  vcov.meta(object, select, robust=robust, ...)
 }
 
-vcov.wls <- function(object, R=50, ...) {
+vcov.wls <- function(object, ...) {
   if (!is.element("wls", class(object)))
     stop("\"object\" must be an object of class \"wls\".")
-
-  if (object$diag.constraints) {
-    ## Parametric bootstrap for vcov when there are nonlinear constraints
-    paraboot <- function(x) {
-      if (x$cor.analysis) {
-        sampleS <- mvrnorm(n=1, mu=vechs(x$Cov), Sigma=x$aCov)
-      } else {
-        sampleS <- mvrnorm(n=1, mu=vech(x$Cov), Sigma=x$aCov)
-      }
-      sampleS <- vec2symMat(sampleS, diag=!x$cor.analysis)
-      mx.model <- mxModel(x$mx.fit, sampleS <- as.mxMatrix(sampleS, name="sampleS"))
-      mx.model <- mxOption(mx.model, "Calculate Hessian", "No") 
-      mx.model <- mxOption(mx.model, "Standard Errors"  , "No")  
-      mx.fit <- tryCatch(mxRun(mx.model, intervals=FALSE, silent=TRUE, suppressWarnings=TRUE),
-                         error = function(e) e )
-      if (inherits(mx.fit, "error")) {
-        return(NA)
-      } else {
-        omxGetParameters(mx.fit)
-      }
-    }
-    #var(t(omxSapply(1:b, paraboot, simplify = TRUE)), na.rm=TRUE)
-    acovS <- var(t(replicate(R, paraboot(object))), na.rm=TRUE)
-    
-    warning("Parametric bootstrap with ",R," replications was used to approximate the sampling covariance matrix of the parameter estimates. A better approach is to use likelihood-based confidence interval by including the intervals.type=\"LB\" argument in the analysis.\n")
-        
-  } else {
-    acovS <- .solve(x=object$mx.fit@output$calculatedHessian)       
-  }
+  vcov(object$mx.fit)
   
-  my.para <- summary(object$mx.fit)$parameters[, 1:4]
-  my.labels <- my.para$name
-  my.order <- with(my.para, order(matrix, row, col))
+  ## if (object$diag.constraints) {
+  ##   ## Parametric bootstrap for vcov when there are nonlinear constraints
+  ##   paraboot <- function(x) {
+  ##     if (x$cor.analysis) {
+  ##       sampleS <- mvrnorm(n=1, mu=vechs(x$Cov), Sigma=x$aCov)
+  ##     } else {
+  ##       sampleS <- mvrnorm(n=1, mu=vech(x$Cov), Sigma=x$aCov)
+  ##     }
+  ##     sampleS <- vec2symMat(sampleS, diag=!x$cor.analysis)
+  ##     mx.model <- mxModel(x$mx.fit, sampleS <- as.mxMatrix(sampleS, name="sampleS"))
+  ##     mx.model <- mxOption(mx.model, "Calculate Hessian", "No") 
+  ##     mx.model <- mxOption(mx.model, "Standard Errors"  , "No")  
+  ##     mx.fit <- tryCatch(mxRun(mx.model, intervals=FALSE, silent=TRUE, suppressWarnings=TRUE),
+  ##                        error = function(e) e )
+  ##     if (inherits(mx.fit, "error")) {
+  ##       return(NA)
+  ##     } else {
+  ##       omxGetParameters(mx.fit)
+  ##     }
+  ##   }
+  ##   #var(t(omxSapply(1:b, paraboot, simplify = TRUE)), na.rm=TRUE)
+  ##   acovS <- var(t(replicate(R, paraboot(object))), na.rm=TRUE)
+    
+  ##   warning("Parametric bootstrap with ",R," replications was used to approximate the sampling covariance matrix of the parameter estimates. A better approach is to use likelihood-based confidence interval by including the intervals.type=\"LB\" argument in the analysis.\n")
+        
+  ## } else {
+  ##   acovS <- .solve(x=object$mx.fit@output$calculatedHessian)       
+  ## }
+  
+  ## my.para <- summary(object$mx.fit)$parameters[, 1:4]
+  ## my.labels <- my.para$name
+  ## my.order <- with(my.para, order(matrix, row, col))
 
-  acovS <- acovS[my.labels[my.order], my.labels[my.order]]
-  my.labels <- my.labels <- gsub(paste(object$mx.model$name, ".", sep=""), "", row.names(acovS))
-  dimnames(acovS) <- list(my.labels, my.labels)
-
-  acovS
+  ## acovS <- acovS[my.labels[my.order], my.labels[my.order]]
+  ## my.labels <- my.labels <- gsub(paste(object$mx.model$name, ".", sep=""), "", row.names(acovS))
+  ## dimnames(acovS) <- list(my.labels, my.labels)
+  ## acovS
 }
 
-vcov.wls.cluster <- function(object, R=50, ...) {
+vcov.wls.cluster <- function(object, ...) {
     if (!is.element("wls.cluster", class(object)))
     stop("\"object\" must be an object of class \"wls.cluster\".")
-    lapply(object, vcov.wls, R=R, ...)
+    lapply(object, vcov.wls, ...)
 }
   
 vcov.reml <- function(object, ...) {
@@ -860,8 +878,8 @@ vcov.reml <- function(object, ...) {
     ## my.name <- summary(object$mx.fit)$parameters$name
     my.name <- names(omxGetParameters(object$mx.fit))
     my.name <- my.name[!is.na(my.name)]
-    # Fixed a bug that all elements have to be inverted before selecting some of them
-    .solve(x=object$reml@output$calculatedHessian, parameters=my.name)   
+
+    .solve(x=object$mx.fit@output$calculatedHessian, parameters=my.name)
 }
   
 
@@ -907,30 +925,21 @@ coef.tssem1FEM.cluster <- function(object, ...) {
 coef.wls <- function(object, ...) {
     if (!is.element("wls", class(object)))
         stop("\"object\" must be an object of class \"wls\".")
+    coef(object$mx.fit)
     
-    ## ## object$mx.fit@output$estimate
-    ## my.mx <- summary(object$mx.fit)
-    ## my.coef <- my.mx$parameters$Estimate
-    ## ## # For example, P[1,2], L[1,2], ...
-    ## ## names(my.coef) <- with(my.mx$parameters[, 2:4], paste(matrix,"[",row,",",col,"]",sep=""))
-    ## my.labels <- my.mx$parameters$name
-    ## my.labels <- gsub(paste(object$mx.model$name, ".", sep=""), "", my.labels)
-    ## names(my.coef) <- my.labels    
+    ## ## Make sure that coef.wls follows the order in vcov.wls
+    ## my.para <- summary(object$mx.fit)$parameters[, 1:5]
+    ## my.order <- with(my.para, order(matrix, row, col))
+    ## ## Reorder it following the order in vcov.wls
+    ## my.para <- my.para[my.order, ]
+    ## my.coef <- my.para$Estimate
+    ## names(my.coef) <- my.para$name
     ## my.coef
-
-    ## Make sure that coef.wls follows the order in vcov.wls
-    my.para <- summary(object$mx.fit)$parameters[, 1:5]
-    my.order <- with(my.para, order(matrix, row, col))
-    ## Reorder it following the order in vcov.wls
-    my.para <- my.para[my.order, ]
-    my.coef <- my.para$Estimate
-    names(my.coef) <- my.para$name
-    my.coef
 }
 
 coef.wls.cluster <- function(object, ...) {
     if (!is.element("wls.cluster", class(object)))
-    stop("\"object\" must be an object of class \"wls.cluster\".")
+        stop("\"object\" must be an object of class \"wls.cluster\".")
     lapply(object, coef.wls)
 }
 
@@ -968,13 +977,13 @@ summary.tssem1FEM.cluster <- function(object, ...) {
     lapply(object, summary.tssem1FEM, ...)
 }
 
-summary.wls.cluster <- function(object, df.adjustment=0, R=50, ...) {
+summary.wls.cluster <- function(object, df.adjustment=0, ...) {
     if (!is.element("wls.cluster", class(object)))
     stop("\"object\" must be an object of class \"wls.cluster\".")
-    lapply(object, summary.wls, df.adjustment=0, R=R, ...)
+    lapply(object, summary.wls, df.adjustment=0, ...)
 }
 
-summary.meta3X <- function(object, allX=FALSE, ...) {
+summary.meta3X <- function(object, allX=FALSE, robust=FALSE, ...) {
     if (!is.element("meta3X", class(object)))
       stop("\"object\" must be an object of class \"meta3X\".")
 
@@ -1000,23 +1009,31 @@ summary.meta3X <- function(object, allX=FALSE, ...) {
     
     # Determine if CIs on parameter estimates are present
     if (is.null(dimnames(my.ci))) {
-      my.para$lbound <- my.para$Estimate - qnorm(.975)*my.para$Std.Error
-      my.para$ubound <- my.para$Estimate + qnorm(.975)*my.para$Std.Error
-      my.para <- my.para[order(my.para$label), , drop=FALSE]
-      # remove rows with missing labels
-      #my.para <- my.para[!is.na(my.para$label), ,drop=FALSE]
-      coefficients <- my.para[, c("Estimate","Std.Error","lbound","ubound"), drop=FALSE]
+
+        ## Replace the SEs with robust SEs
+        if (robust) {
+            my.robust <- suppressMessages(imxRobustSE(object$mx.fit))
+            my.para[, "Std.Error"] <- my.robust[my.para$name]
+        }
+
+        my.para$lbound <- my.para$Estimate - qnorm(.975)*my.para$Std.Error
+        my.para$ubound <- my.para$Estimate + qnorm(.975)*my.para$Std.Error
+        my.para <- my.para[order(my.para$label), , drop=FALSE]
+        ## remove rows with missing labels
+        ## my.para <- my.para[!is.na(my.para$label), ,drop=FALSE]
+        coefficients <- my.para[, c("Estimate","Std.Error","lbound","ubound"), drop=FALSE]
     } else {
-      name <- sapply(unlist(dimnames(my.ci)[1]), function(x)
-                            {strsplit(x, ".", fixed=TRUE)[[1]][2]}, USE.NAMES=FALSE)
-      my.ci <- data.frame(name, my.ci)
-      my.para <- merge(x=my.para, y=my.ci, by=c("name"), all.x=TRUE)
-      my.para <- my.para[order(my.para$label), , drop=FALSE]
-      # remove rows with missing labels
-      #my.para <- my.para[!is.na(my.para$label), , drop=FALSE]
-      coefficients <- cbind(Estimate=my.para[, "Estimate"], Std.Error=NA, my.para[, c("lbound","ubound")])
-      # NA for LBCI
-      ## coefficients$Std.Error <- NA                             
+        name <- sapply(unlist(dimnames(my.ci)[1]),
+                       function(x) {strsplit(x, ".", fixed=TRUE)[[1]][2]}, USE.NAMES=FALSE)
+        my.ci <- data.frame(name, my.ci)
+        my.para <- merge(x=my.para, y=my.ci, by=c("name"), all.x=TRUE)
+        my.para <- my.para[order(my.para$label), , drop=FALSE]
+        ## remove rows with missing labels
+        ## my.para <- my.para[!is.na(my.para$label), , drop=FALSE]
+        coefficients <- cbind(Estimate=my.para[, "Estimate"], Std.Error=NA,
+                              my.para[, c("lbound","ubound")])
+        ## NA for LBCI
+        ## coefficients$Std.Error <- NA                             
     }
     dimnames(coefficients)[[1]] <- my.para$label
     coefficients$"z value" <- coefficients$Estimate/coefficients$Std.Error
@@ -1037,7 +1054,8 @@ summary.meta3X <- function(object, allX=FALSE, ...) {
                 R2=object$R2, R2.values=R2.values, no.studies=my.mx$numObs,
                 obsStat=my.mx$observedStatistics, estPara=my.mx$estimatedParameters,
                 df=my.mx$degreesOfFreedom, Minus2LL=my.mx$Minus2LogLikelihood,
-                coefficients=coefficients, Mx.status1=object$mx.fit@output$status[[1]])
+                coefficients=coefficients, Mx.status1=object$mx.fit@output$status[[1]],
+                robust=robust)
     class(out) <- "summary.meta3X"
     out
 }
@@ -1053,7 +1071,7 @@ print.summary.meta3X <- function(x, ...) {
     
     cat("95% confidence intervals: ")
     switch(x$intervals.type,
-           z = cat("z statistic approximation"),
+           z = cat("z statistic approximation (robust=", x$robust, ")", sep=""),
            LB = cat("Likelihood-based statistic") )
 
     cat("\nCoefficients:\n")
@@ -1087,7 +1105,8 @@ print.meta3X <- function(x, ...) {
     print(summary.default(x), ...)
 }
 
-vcov.meta3X <- function(object, select=c("all", "fixed", "random", "allX"), ...) {
+vcov.meta3X <- function(object, select=c("all", "fixed", "random", "allX"),
+                        robust=FALSE, ...) {
     if (!is.element("meta3X", class(object)))
     stop("\"object\" must be an object of class \"meta3X\".")
 
@@ -1103,8 +1122,13 @@ vcov.meta3X <- function(object, select=c("all", "fixed", "random", "allX"), ...)
          random = my.name <- my.name[ grep("Tau2", my.name) ]
          )
     
-    # Fixed a bug that all elements have to be inverted before selecting some of them
-    .solve(x=object$mx.fit@output$calculatedHessian, parameters=my.name)
+    if (robust) {
+        out <- suppressMessages(imxRobustSE(object$mx.fit, details=TRUE))$cov
+        out <- out[my.name, my.name]
+    } else {
+        out <- .solve(x=object$mx.fit@output$calculatedHessian, parameters=my.name)
+    }
+    out
 }
 
 coef.meta3X <- function(object, select=c("all", "fixed", "random", "allX"), ...) {

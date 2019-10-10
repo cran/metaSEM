@@ -18,14 +18,14 @@
 \usage{
 \method{vcov}{tssem1FEM}(object, \dots)
 \method{vcov}{tssem1FEM.cluster}(object, \dots)
-\method{vcov}{tssem1REM}(object, select = c("all", "fixed", "random"), \dots)
-\method{vcov}{wls}(object, R=50, \dots)
-\method{vcov}{wls.cluster}(object, R=50, \dots)
-\method{vcov}{meta}(object, select = c("all", "fixed", "random"), \dots)
-\method{vcov}{meta3X}(object, select = c("all", "fixed", "random", "allX"), \dots)
+\method{vcov}{tssem1REM}(object, select = c("all", "fixed", "random"), robust=FALSE, \dots)
+\method{vcov}{wls}(object, \dots)
+\method{vcov}{wls.cluster}(object, \dots)
+\method{vcov}{meta}(object, select = c("all", "fixed", "random"), robust=FALSE, \dots)
+\method{vcov}{meta3X}(object, select = c("all", "fixed", "random","allX"), robust=FALSE, \dots)
 \method{vcov}{reml}(object, \dots)
 \method{vcov}{MxRAMModel}(object, \dots)
-\method{vcov}{osmasem}(object, select=c("fixed", "all", "random"), \dots)
+\method{vcov}{osmasem}(object, select=c("fixed", "all", "random"), robust=FALSE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -36,8 +36,7 @@
   parameters. For \code{meta3X} objects, \code{allX} is used to extract
   all parameters including the predictors and auxiliary variables.  
 }
-  \item{R}{Positive integer. The number of parameter bootstrap
-	replicates when \code{diag.constraints=TRUE}.
+  \item{robust}{Logicial. Whether to use robust standard error from \code{\link[OpenMx]{imxRobustSE}}.
 }
   \item{\dots}{Further arguments; currently none is used}
 }

@@ -5,7 +5,7 @@
 \description{It fits MASEM with the one-stage MASEM (OSMASEM) approach.  
 }
 \usage{
-osmasem(model.name="osmasem", Mmatrix, Tmatrix, data,
+osmasem(model.name="osmasem", Mmatrix, Tmatrix, data, subset=NULL,
         intervals.type=c("z", "LB"), mxModel.Args=NULL,
         mxRun.Args=NULL, suppressWarnings=TRUE,
         silent=TRUE, run=TRUE, ...)
@@ -18,6 +18,8 @@ osmasem(model.name="osmasem", Mmatrix, Tmatrix, data,
 \item{Tmatrix}{A list of matrices of the heterogeneity
   variance-covariance matrix created by the \code{create.Tau2}.}
 \item{data}{A list of data created by the \code{Cor2DataFrame}.}
+\item{subset}{A character vector of the observed variables selected for
+  the analysis.}
 \item{intervals.type}{Either \code{z} (default if missing) or
   \code{LB}. If it is \code{z}, it calculates the 95\% confidence
   intervals (CIs) based on the estimated standard error. If it
@@ -38,7 +40,8 @@ osmasem(model.name="osmasem", Mmatrix, Tmatrix, data,
 }
 
 \references{
-Jak, S., & Cheung, M. W. (2018). Meta-analytic structural equation modeling with moderating effects on SEM parameters. https://doi.org/10.31234/osf.io/ce85j
+Jak, S., & Cheung, M. W.-L. (in press). Meta-analytic structural equation
+modeling with moderating effects on SEM parameters. \emph{Psychological Methods}.
 }  
 \seealso{ \code{\link[metaSEM]{Cor2DataFrame}}, \code{\link[metaSEM]{create.vechsR}},
   \code{\link[metaSEM]{create.Tau2}}, \code{\link[metaSEM]{create.V}}, \code{\link[metaSEM]{Nohe15}}
