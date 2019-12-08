@@ -1,7 +1,7 @@
-6f9b78d849110fefd6cf4e1d7a54a532 *DESCRIPTION
+cad8db9b8288c67a58227406ade8e064 *DESCRIPTION
 305c2424fdc217efa9c993406744eedf *NAMESPACE
-01e7562ebabc72a896f86fd9657b84e4 *NEWS
-c1bba8e67a886f2f99319ee272d08825 *R/Diag.R
+f8d7e64f1f98c4fe1c95972122f7d1af *NEWS
+17164d363b8fb5114c70f2e13248f55a *R/Diag.R
 ea6cf2d587ece47146f5959773232e9e *R/as.mxMatrix.R
 c1475e928205c3dcdb3b1d2d67eab138 *R/asyCov.R
 21f1e19883743b5decc1be1553bda263 *R/bdiagMat.R
@@ -21,11 +21,11 @@ cb9e2d152a1e4c115a21752f2f29fda5 *R/lavaan2RAM.R
 38ad7bfa759b9be014a9f372b7e5b915 *R/list2matrix.R
 465e4bcfc72a1f287827d7ba42b6f8d2 *R/matrix2bdiag.R
 2330b8d4933e0c365151c8c7f5389eb2 *R/meta.R
-b7579249d7c7e384dee1b8482069a9ab *R/meta2semPlot.R
+c99a6a584690e36fe3e8ec90f509c5e7 *R/meta2semPlot.R
 ce0bb56201064d9dbf3dcd95806835f2 *R/meta3.R
 bbfc468dc602465881f027f244a7517a *R/meta3X.R
 9642cef8663db4c4d01a122e98a3a899 *R/metaX.R
-4252b3d670e1a7818bcdb24f22ce2dcc *R/osmasem.R
+be6c9b9d72af08d15e11b3bc8b952ea7 *R/osmasem.R
 39725c3688a6e998ef04bf179934448a *R/pattern.R
 734dc19e45d27ee0141ea92c0f421619 *R/plot.meta.R
 8d644f297cd184afde5bd7cf93550c02 *R/readDataSet.R
@@ -76,9 +76,9 @@ bb275fe1517a992505f4408a00a6a465 *data/issp89.rda
 dcee1533fce8d6d2281a752a152d0c5b *data/wvs94a.rda
 7312017dacb458a60ca79790f5653f33 *data/wvs94b.rda
 964e71a1569f31db85ea405e26d2bf93 *inst/CITATION
-48a89b794560c6f69a417864f309c9b0 *inst/doc/Examples.html
+181f7440843f7a425b03699a5714ca50 *inst/doc/Examples.html
 5aefef919c9cc63945d9c1afea520509 *inst/doc/Examples.html.asis
-2e6e197d8a2158f446131210655e272a *inst/doc/metaSEM.pdf
+b61c48f773e1db79e85e7387b5a37272 *inst/doc/metaSEM.pdf
 f3a1f5d62be6cca43ba5b58f8fd0924e *inst/doc/metaSEM.pdf.asis
 927fc3d961ac8b14a08ab0d89997b63a *man/Aloe14.Rd
 1300a5119d144cd0300d8e71b2c197fd *man/BCG.Rd
@@ -139,8 +139,8 @@ f1782c885a0ac793c8fef71cd09825ea *man/issp89.Rd
 9a0193ad631a109992e67d012a490fbb *man/meta.Rd
 0507d64eec42b7fc05263834ddc9f55e *man/meta2semPlot.Rd
 c0ce383770d0d4cb68258510fa87506a *man/meta3.Rd
-843bb1e93f8e958ab91b2ed72b9f46bf *man/metaSEM-package.Rd
-92528b7467f13f1712b84474e4fc09f4 *man/osmasem.Rd
+59779f74ff657c0aebd9905df65f570f *man/metaSEM-package.Rd
+bf09fb037ec7ad366f914e9698e6e7fa *man/osmasem.Rd
 9a62316559bb59ecc7affc0a9bdf2634 *man/osmasemR2.Rd
 143d44d8b9b5c219482b758bd26ab8ef *man/osmasemSRMR.Rd
 ac0b3bc44f344ce0186d176a6c799795 *man/pattern.n.Rd
