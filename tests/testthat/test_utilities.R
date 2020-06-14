@@ -33,6 +33,20 @@ test_that("is.pd() works correctly", {
     expect_identical(is.pd(list(x1, x2, x3)), c(TRUE, FALSE, NA)) 
 })
 
+test_that("as.mxMatrix() works correctly", {
+
+    x1 <- matrix(c(1, "2*a", "3@b", 4), ncol=2, nrow=2)
+    x1.labels <- c(NA, "a", "b", NA)
+    x1.values <- 1:4
+    x1.free <- c(FALSE, TRUE, FALSE, FALSE)
+    x2 <- mxMatrix(type="Full", nrow=2, ncol=2,
+                   free=x1.free, values=x1.values,
+                   labels=x1.labels, name="x1")
+ 
+    expect_identical(x2, as.mxMatrix(x1))
+})
+
+
 test_that("vec2symMat() works correctly", {
 
     x1 <- vec2symMat(1:10)
@@ -146,6 +160,59 @@ test_that("list2matrix() works correctly", {
                             byrow=TRUE, nrow=2, ncol=3,
                             dimnames=list(NULL, c("x_x", "y_x", "y_y"))))
 })
+
+test_that("lavaan2RAM() works correctly", {
+    ## Multiple regression with 2 groups
+    model1 <- "y ~ 1 + c(b1, b2)*x1 + c(b3, b4)*x2"
+    model2 <- list("1"="y ~ 1 + b1*x1 + b3*x2",
+                   "2"="y ~ 1 + b2*x1 + b4*x2")       
+    RAM1 <- lavaan2RAM(model1, ngroups=2)
+    RAM2 <- lapply(model2, lavaan2RAM)
+    expect_identical(RAM1, RAM2)
+
+    ## CFA with 2 groups
+    model3 <- "f =~ c(a, a)*x1 + c(b1, b2)*x2 + c(c1, c2)*x3 + c(d1, d2)*x4"
+    model4 <- list("1"="f =~ a*x1 + b1*x2 + c1*x3 + d1*x4",
+                   "2"="f =~ a*x1 + b2*x2 + c2*x3 + d2*x4")
+    RAM3 <- lavaan2RAM(model3, ngroups=2)
+    RAM4 <- lapply(model4, lavaan2RAM)
+    expect_identical(RAM3, RAM4)
+})
+
+test_that("as.symMatrix() works correctly", {
+    A1 <- matrix(c(1:3, "a", "*b", "6*c", 7:9), ncol=3, nrow=3)
+    A2 <- matrix(c(1:3, "a", "b", "c", 7:9), ncol=3, nrow=3)    
+    A3 <- as.symMatrix(A1)
+    expect_identical(A2, A3)
+
+    B1 <- diag(4)
+    B2 <- Diag(rep("1", 4))
+    B3 <- as.symMatrix(B1)
+    expect_identical(B2, B3)
+    
+    model <- "y ~ b*m + c*x
+              m ~ a*x
+              x ~~ 1*x
+              m ~~ Errm*m
+              y ~~ Erry*y
+              x ~ meanx*1
+              m ~ interceptm*1
+              y ~ intercepty*1"
+    RAM1 <- lavaan2RAM(model, obs.variables =c("y", "m", "x"))
+    RAM2 <- RAM1
+    RAM2$A[1, 2] <- "b"
+    RAM2$A[1, 3] <- "c"
+    RAM2$A[2, 3] <- "a"
+    RAM2$S[1, 1] <- "Erry"
+    RAM2$S[2, 2] <- "Errm"
+    RAM2$M[1, 1] <- "intercepty"
+    RAM2$M[1, 2] <- "interceptm"
+    RAM2$M[1, 3] <- "meanx"
+    RAM2$F[] <- as.character(RAM2$F)
+    RAM3 <- as.symMatrix(RAM1)
+    expect_identical(RAM2, RAM3)
+})
+
 
 context("Checking functions calculating effect sizes")
 
