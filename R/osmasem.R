@@ -1,29 +1,3 @@
-Cor2DataFrame <- function(x, n, v.na.replace=TRUE, row.names.unique=FALSE,
-                          cor.analysis=TRUE, acov="weighted", ...) {
-    if (length(x) != length(n)) stop("Lengths of 'x' and 'n' are different.\n")
-    
-    if (cor.analysis) {
-        my.df <- list2matrix(x=suppressWarnings(lapply(x, cov2cor)), diag=FALSE)
-    } else {
-        my.df <- list2matrix(x=x, diag=TRUE)
-    }
-
-    acovR <- asyCov(x=x, n=n, cor.analysis=cor.analysis, acov=acov, ...)
-
-    ## NA is not allowed in definition variables
-    ## They are replaced by 1e10
-    if (v.na.replace) acovR[is.na(acovR)] <- 1e10
-
-    data <- suppressWarnings(data.frame(my.df, acovR, check.names=FALSE))
-    
-    ## Use unique row names if the row names are duplicated.
-    if (row.names.unique) rownames(data) <- make.names(names(x), unique=TRUE)    
-
-    list(data=data, n=n, obslabels=colnames(x[[1]]),
-         ylabels=dimnames(my.df)[[2]], vlabels=dimnames(acovR)[[2]])
-}
-
-
 ## A function to extract levels of path directions started from IVs to DVs
 .pathLevels <- function(A) {
     ## assuming non-recursive models
@@ -197,6 +171,10 @@ create.vechsR <- function(A0, S0, F0=NULL, Ax=NULL, Sx=NULL) {
             text3 <- paste0("Sx",i, " <- as.mxMatrix(Sx[[",
                             i, "]], name='Sx",i, "')")
             eval(parse(text=text3))
+
+            ## Fix the diagonals of S1, S2... to 0
+            text4 <- paste0("diag(S",i,"$values) <- 0")
+            eval(parse(text=text4))
         }  ## from 'if else' 
 
         ## Not the final Smatrix as it does not include the error variances
@@ -297,7 +275,7 @@ create.Tau2 <- function(RAM, no.var, Tau1.labels=seq(no.var),
     }    
 
     ## Convert the starting values into positive.
-    if (any(RE.startvalues <= 0)) {
+    if (any(RE.startvalues < 0)) {
         RE.startvalues <- abs(RE.startvalues) + 1e-10
         warning("Not all 'RE.startvalues' are positive.\n")
     }
@@ -342,9 +320,13 @@ create.Tau2 <- function(RAM, no.var, Tau1.labels=seq(no.var),
                            if (RE.User[i,j] & !all(RE.User[i,i], RE.User[j,j])) {
                                stop("RE.User[",j,",",i,"] is free but either RE.User[",i,",",
                                     i,"] or RE.User[",j,",",j,"] is fixed.\n") }}}}
-                              
+                                               
                vecTau1 <- paste0(RE.startvalues, "*Tau1_", Tau1.labels)
-               vecTau1[diag(RE.User)==FALSE] <- 0
+               ## Fixed a bug that RE.startvalues are not used when the variances are not free.
+               ## vecTau1[diag(RE.User)==FALSE] <- 0                                
+               switch(Transform,
+                      expLog = vecTau1[diag(RE.User)==FALSE] <- log(0),
+                      sqSD =   vecTau1[diag(RE.User)==FALSE] <- sqrt(0))
                vecTau1 <- create.mxMatrix(vecTau1, ncol=1, nrow=no.var, name="vecTau1")
                Cor <- outer(seq(no.var), seq(no.var),
                             function(x,y) paste0("0*Cor_", x, "_", y))
@@ -393,7 +375,8 @@ create.V <- function(x, type=c("Symm", "Diag", "Full"), as.mxMatrix=TRUE) {
 osmasem <- function(model.name="osmasem", RAM=NULL, Mmatrix=NULL,
                     Tmatrix=NULL, Jmatrix=NULL, Ax=NULL, Sx=NULL,
                     RE.type=c("Diag", "Symm"), data,
-                    subset=NULL, intervals.type = c("z", "LB"),
+                    subset.variables=NULL, subset.rows=NULL, 
+                    intervals.type = c("z", "LB"),
                     mxModel.Args=NULL, mxRun.Args=NULL,
                     suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...) {
 
@@ -408,14 +391,13 @@ osmasem <- function(model.name="osmasem", RAM=NULL, Mmatrix=NULL,
     ## "%ni%" <- Negate("%in%")
 
     ## Filter out variables not used in the analysis
-    if (!is.null(subset)) {
-        index  <- !(subset %in% data$obslabels)
+    if (!is.null(subset.variables)) {
+        index  <- !(subset.variables %in% data$obslabels)
         if (any(index)) {
-            stop(paste0(paste0(subset[index], collapse = ", "), " are not in the ylabels.\n"))
+            stop(paste0(paste0(subset.variables[index], collapse = ", "), " are not in the ylabels.\n"))
         }
-
-        temp <- .genCorNames(subset)
-        obslabels <- subset
+        temp <- .genCorNames(subset.variables)
+        obslabels <- subset.variables
         ylabels <- temp$ylabels
         vlabels <- temp$vlabels        
     } else {
@@ -443,9 +425,15 @@ osmasem <- function(model.name="osmasem", RAM=NULL, Mmatrix=NULL,
         Jmatrix$name  <- "Jmatrix"
     }
     
+    if (is.null(subset.rows)) {
+        subset.rows <- rep(TRUE, nrow(data$data))
+    }
+    ## Select data for the analaysis
+    mx.data <- data$data[subset.rows, ]
+
     ## Dirty trick to avoid the warning of "no visible binding for global variable"
     mx.model <- eval(parse(text="mxModel(model=model.name,
-                           mxData(observed=data$data, type='raw'),
+                           mxData(observed=mx.data, type='raw'),
                            mxExpectationNormal(covariance='expCov',
                                                means='vechsR',
                                                dimnames=ylabels),
@@ -476,11 +464,17 @@ osmasem <- function(model.name="osmasem", RAM=NULL, Mmatrix=NULL,
         warning(print(mx.fit))
     }
 
-    out <- list(call=match.call(), Mmatrix=Mmatrix, Tmatrix=Tmatrix,
-                Vmatrix=Vmatrix, Jmatrix=Jmatrix, data=data,
-                labels=list(obslabels=obslabels, ylabels=ylabels,
-                            vlabels=vlabels),
-                mxModel.Args=mxModel.Args, mxRun.Args=mxRun.Args,
+    out <- list(call=match.call(), 
+                Mmatrix=Mmatrix, 
+                Tmatrix=Tmatrix,
+                Vmatrix=Vmatrix, 
+                Jmatrix=Jmatrix, 
+                data=data,
+                labels=list(obslabels=obslabels, ylabels=ylabels, vlabels=vlabels),
+                mxModel.Args=mxModel.Args,
+                mxRun.Args=mxRun.Args,
+                subset.variables=subset.variables,
+                subset.rows=subset.rows,
                 mx.model=mx.model, mx.fit=mx.fit)
     class(out) <- 'osmasem'
     out
@@ -556,7 +550,7 @@ VarCorr <- function(x, ...) {
 
 ## Fit a saturated model with either a diagonal or symmetric variance component of random effects
 .osmasemSatIndMod <- function(osmasem.obj=NULL, model=c("Saturated", "Independence"),
-                              Std.Error=FALSE, Tmatrix, data, subset=NULL,
+                              Std.Error=FALSE, Tmatrix, data, 
                               mxModel.Args=NULL, mxRun.Args=NULL, suppressWarnings=TRUE,
                               silent=FALSE, run=TRUE, ...) {
 
@@ -570,6 +564,7 @@ VarCorr <- function(x, ...) {
         p <- nrow(Tmatrix$Cor$values)
         data <- osmasem.obj$data
     } else {
+        ## If there is no osmasem.obj, create a new saturated/independence model from data.
         p <- length(osmasem.obj$labels$ylabels)
         ## Create known sampling variance covariance matrix
         Vmatrix <- create.V(osmasem.obj$labels$vlabels, type="Symm", as.mxMatrix=TRUE)
@@ -587,9 +582,12 @@ VarCorr <- function(x, ...) {
                             nrow=1, ncol=p, name="Mu")        
     }
 
+    ## Filter the data for the analysis
+    mx.data <- data$data[osmasem.obj$subset.rows, ]
+
     ## Dirty trick to avoid the warning of "no visible binding for global variable"
     mx.model <- eval(parse(text="mxModel(model=model,
-                                 mxData(observed=data$data, type='raw'),
+                                 mxData(observed=mx.data, type='raw'),
                                  mxExpectationNormal(covariance='expCov',
                                                      means='Mu',
                                                      dimnames=osmasem.obj$labels$ylabels),
@@ -605,17 +603,17 @@ VarCorr <- function(x, ...) {
 
     ## It may speed up the analysis
     if (Std.Error==FALSE) {
-        mx.model <- mxOption(mx.model, "Calculate Hessian", "No") 
-        mx.model <- mxOption(mx.model, "Standard Errors"  , "No")
+        mx.model <- mxOption(mx.model, "Calculate Hessian", "No")
+        mx.model <- mxOption(mx.model, "Standard Errors", "No")
     }
     
     ## Return mx model without running the analysis
     if (run==FALSE) {
         return(mx.model)
-    } else {        
+    } else {
         mx.fit <- tryCatch(do.call(mxRun, c(list(mx.model, silent=silent,
                                                  suppressWarnings=suppressWarnings),
-                                             mxRun.Args)), error = function(e) e)
+                                                 mxRun.Args)), error = function(e) e)
     }
     
     # try to run it with error message as output
@@ -642,7 +640,7 @@ summary.osmasem <- function(object, fitIndices=FALSE, numObs,
     ## If numObs is not provided, use the total N
     if (missing(numObs)) {
         ## numObs <- sum(object$data$n)-length(object$data$n)
-        numObs <- sum(object$data$n)
+        numObs <- sum(object$data$n[object$subset.rows])
     }
 
     ## Calculate chi-square statistic and other fit indices
@@ -658,7 +656,7 @@ summary.osmasem <- function(object, fitIndices=FALSE, numObs,
             ## if (sum(object$Tmatrix$Cor$free)>0) RE.type="Symm" else RE.type="Diag"
             ## T0 <- create.Tau2(no.var=p, RE.type=RE.type)
 
-            ## For rcmasem, the variance component cannot be Diag;
+            ## TODO: For rcmasem, the variance component cannot be Diag;
             ## otherwise, the saturated model fits poorer than the rcmasem.
             T0 <- create.Tau2(no.var=p, RE.type="Symm")
             
@@ -714,12 +712,12 @@ summary.osmasem <- function(object, fitIndices=FALSE, numObs,
                                SaturatedLikelihood=Sat.stat$Minus2LogLikelihood,
                                SaturatedDoF=Sat.stat$degreesOfFreedom,
                                numObs=numObs, ...)
-                warning("There are errors in fitting the independence model or its degree of freedom is non-positive.\n")
+                warning("There are errors in either fitting the independence model or its degree of freedom being non-positive.\n")
             }
             ## if Sat.model is not defined, no chi-square and fit indices    
         } else {
             out <- summary(object$mx.fit, numObs=numObs, ...)
-            warning("There are errors in fitting the saturated model or its degree of freedom is non-positive.\n")
+            warning("There are errors in either fitting the saturated model or its degree of freedom being non-positive.\n")
         }
     ## fitIndices=FALSE 
     } else {
@@ -765,10 +763,10 @@ osmasemSRMR <- function(x) {
         stop("Moderators are not allowed in calculating the SRMR in OSMASEM.\n")
 
     ## Saturated model which should be very close to the stage 1 results in the TSSEM
-    fit.sat <- .osmasemSatIndMod(x, model="Saturated", Std.Error=FALSE, silent=TRUE)
+    Sat.stat <- .osmasemSatIndMod(x, model="Saturated", Std.Error=FALSE, silent=TRUE)
 
     ## Similar to the sample correlation matrix
-    sampleR <- vec2symMat(eval(parse(text = "mxEval(Mu, fit.sat)")), diag=FALSE)
+    sampleR <- vec2symMat(eval(parse(text = "mxEval(Mu, Sat.stat)")), diag=FALSE)
 
     ## Model implied correlation matrix
     impliedR <- mxEval(impliedR, x$mx.fit)

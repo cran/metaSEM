@@ -330,6 +330,27 @@ test_that("smdMES() works correctly", {
 
 context("Checking OSMASEM functions")
 
+test_that("Cor2DataFrame() works correctly", {
+
+    ## No moderators
+    my.df1 <- Cor2DataFrame(Nohe15A1$data, Nohe15A1$n)
+    my.df2 <- Cor2DataFrame(Nohe15A1, append.vars=FALSE)
+    expect_equal(my.df1, my.df2, tolerance = .001)
+    
+    ## Append additional variables
+    my.df1$data <- data.frame(my.df1$data,
+                              RelW1=Nohe15A1$RelW1,
+                              RelW2=Nohe15A1$RelW2,
+                              RelS1=Nohe15A1$RelS1,
+                              RelS2=Nohe15A1$RelS2,
+                              FemalePer=Nohe15A1$FemalePer,
+                              Publication=Nohe15A1$Publication,
+                              Lag=Nohe15A1$Lag, check.names=FALSE)
+    my.df2 <- Cor2DataFrame(Nohe15A1, append.vars=TRUE)
+    expect_equal(my.df1, my.df2, tolerance = .001)  
+})
+
+
 test_that("checkRAM() works correctly", {
     ## Checking A
     
@@ -467,7 +488,8 @@ test_that("create.Tau2() works correctly", {
                     RE.User=RE.User, 
                     RE.startvalues=0.01)
   vecTau3 <- paste0(log(0.01), "*Tau1_", seq(6))
-  vecTau3[diag(RE.User)==FALSE] <- 0
+  ## Fixed a bug that the values should be log(0) rather than 0 when they are fixed parameters.  
+  vecTau3[diag(RE.User)==FALSE] <- log(0)
   vecTau3 <- create.mxMatrix(vecTau3, ncol=1, nrow=6, name="vecTau1")
   Cor3 <- outer(seq(6), seq(6),
                 function(x,y) paste0("0*Cor_", x, "_", y))
@@ -485,7 +507,7 @@ test_that("create.Tau2() works correctly", {
                     RE.User=RE.User, 
                     RE.startvalues=0.01)
   vecTau4 <- paste0(log(0.01), "*Tau1_", seq(6))
-  vecTau4[diag(RE.User)==FALSE] <- 0
+  vecTau4[diag(RE.User)==FALSE] <- log(0)
   vecTau4 <- create.mxMatrix(vecTau4, ncol=1, nrow=6, name="vecTau1")
   Cor4 <- outer(seq(6), seq(6),
                 function(x,y) paste0("0*Cor_", x, "_", y))

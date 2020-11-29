@@ -9,13 +9,16 @@
 }
 \usage{
 Cor2DataFrame(x, n, v.na.replace = TRUE, row.names.unique = FALSE,
-              cor.analysis = TRUE, acov="weighted", ...)
+              cor.analysis = TRUE, acov="weighted", append.vars=TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{A correlation/covariance matrix or a list of
-	correlation/covariance matrices.}
-\item{n}{Sample size or a vector of sample sizes}
+  \item{x}{A list of data with correlation/covariance matrix in \code{x$data} and
+   sample sizes \code{x$n}. Additional variables in \code{x} can be attached.
+}
+\item{n}{If \code{x} is a list of correlation matrices without
+  \code{x$data} and \code{x$n}, a vector of sample sizes \code{n} must
+  be provided.}
 \item{v.na.replace}{Logical. Missing value is not allowed in definition
   variables. If it is \code{TRUE} (the default), missing value is
   replaced by a large value (1e10). These values are not used in the analysis.} 
@@ -26,7 +29,9 @@ Cor2DataFrame(x, n, v.na.replace = TRUE, row.names.unique = FALSE,
 \item{acov}{If it is \code{weighted}, the average correlation/covariance
   matrix is calculated based on the weighted mean with the sample
   sizes. The average correlation/covariance matrix is used to calculate the sampling
-	variance-covariance matrices.}
+  variance-covariance matrices.}
+\item{append.vars}{Whether to append the additional variables to
+  the output dataframe.}
 \item{\dots}{Further arguments to be passed to \code{\link[metaSEM]{asyCov}}.}
 }
 
@@ -43,19 +48,26 @@ Cor2DataFrame(x, n, v.na.replace = TRUE, row.names.unique = FALSE,
 
 \examples{
 \dontrun{
-my.df <- Cor2DataFrame(Nohe15A1$data, Nohe15A1$n)
+## Provide a list of correlation matrices and a vector of sample sizes as the inputs
+my.df1 <- Cor2DataFrame(Nohe15A1$data, Nohe15A1$n)
+
+## Add Lag time as a variable
+my.df1$data <- data.frame(my.df1$data, Lag=Nohe15A1$Lag, check.names=FALSE)
 
 ## Data
-my.df$data
+my.df1$data
 
 ## Sample sizes
-my.df$n
+my.df1$n
 
 ## ylabels
-my.df$ylabels
+my.df1$ylabels
 
 ## vlabels
-my.df$vlabels
+my.df1$vlabels
+
+#### Simplified version to do it
+my.df2 <- Cor2DataFrame(Nohe15A1)
 }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
