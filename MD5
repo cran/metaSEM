@@ -1,6 +1,6 @@
-3ea3b5cf54b4c3a11e3e9c239025cd68 *DESCRIPTION
+8a255eec963d46807996268c3eb18185 *DESCRIPTION
 a6117f55d1d0eacfe1b82bc5290b0b34 *NAMESPACE
-3076a997ce8d356856219931879156dc *NEWS
+8a78fec772b301f1b3faee0b15beeff8 *NEWS
 2cf67f317752e0b5dd1a8866a7d76852 *R/Cor2DataFrame.R
 17164d363b8fb5114c70f2e13248f55a *R/Diag.R
 a287e43d1eac855edfb4005fb3356415 *R/as.mxMatrix.R
@@ -13,7 +13,7 @@ c04a5f74c3dcfcd16e19afae3840ea37 *R/bootuniR.R
 bc2d6bc032be47067697f361b51fe8de *R/create.Fmatrix.R
 3a7fa07ab06607dc971ba5c9e16f44fb *R/create.modMatrix.R
 9865fd252a0077c930c1260aa5bd53f4 *R/create.mxMatrix.R
-fe2067096a73b56a8b88e49bd577386c *R/create.mxModel.R
+b608cda33949452f0741d48ac167a86c *R/create.mxModel.R
 086f4051bed77dadcf27d87044b56ff8 *R/genCor.R
 0b670423a3d2c643186e0a6bf544d44a *R/hidden.R
 5f08ba3bdae0ead823226ad6e3e8585b *R/homoStat.R
@@ -134,7 +134,7 @@ f5094a18a55bb181759e81b0bed978be *man/bootuniR2.Rd
 abebf51c5eb3d90ca71cf0deaf1180d6 *man/create.V.Rd
 8aed427462a5975829682de73299e384 *man/create.modMatrix.Rd
 73927d21cd0cab53f19ddef09ecd8765 *man/create.mxMatrix.Rd
-2b610eac7d0d38aa3a22d545251268b2 *man/create.mxModel.Rd
+039530cd08c59ba8fa7fac42cdc99a22 *man/create.mxModel.Rd
 45a211fe3dcc1029843968a8f3b805cb *man/create.vechsR.Rd
 6496712f17ed7d3fe14861e690d723db *man/homoStat.Rd
 6bd6cfed01f7185192f5d74a3b1900d6 *man/impliedR.Rd
@@ -148,7 +148,7 @@ e58a2d4c9a52deaddd7ddd5e6ea7a93c *man/lavaan2RAM.Rd
 9a0193ad631a109992e67d012a490fbb *man/meta.Rd
 0507d64eec42b7fc05263834ddc9f55e *man/meta2semPlot.Rd
 c0ce383770d0d4cb68258510fa87506a *man/meta3.Rd
-b021c73c7edc45ca50a9b3fc3e1a87e8 *man/metaSEM-package.Rd
+64b6c99fd690e1946782f76ada2b7a3e *man/metaSEM-package.Rd
 084ab2767beb0b80fc9935dbde128bb2 *man/osmasem.Rd
 9a62316559bb59ecc7affc0a9bdf2634 *man/osmasemR2.Rd
 143d44d8b9b5c219482b758bd26ab8ef *man/osmasemSRMR.Rd
@@ -171,7 +171,7 @@ e138e85f89358aec60922dc4f42cee1e *man/uniR2.Rd
 fbb10ce2c0cb69bb2ac79748c6ce6646 *man/vanderPol17.Rd
 63cea33e2ee7af67f0a88791b5442e28 *man/vcov.Rd
 266dda8210c0cd69bc444a5c2e13dde8 *man/vec2symMat.Rd
-c4c9e1c6d8fd36e4819dd948ae062bd0 *man/wls.Rd
+365054be83d4158171bb317b7cdda171 *man/wls.Rd
 1e13821778db0519e7e2a871b743a763 *man/wvs94a.Rd
 3da7c0698b44073520cdb439e36ef1e7 *man/wvs94b.Rd
 35170f5fe04c31d8bb548c57053e2252 *tests/testthat.R
