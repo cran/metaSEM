@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mikewlcheung/metasem.svg?branch=master)](https://travis-ci.org/mikewlcheung/metasem)
+[![R build status](https://github.com/mikewlcheung/metasem/workflows/R-CMD-check/badge.svg)](https://github.com/mikewlcheung/metasem/actions)
 [![cran version](http://www.r-pkg.org/badges/version/metaSEM)](https://cran.r-project.org/package=metaSEM)
 [![Monthly Downloads](https://cranlogs.r-pkg.org/badges/metaSEM)](https://cranlogs.r-pkg.org/badges/metaSEM)
 [![Total Downloads](https://cranlogs.r-pkg.org/badges/grand-total/metaSEM)](https://cranlogs.r-pkg.org/badges/grand-total/metaSEM)
@@ -18,8 +18,8 @@ install.packages("metaSEM")
 
 The developmental version can be installed from GitHub by:
 ```
-## Install devtools package if it has not been installed yet
-# install.packages("devtools")
+## Install remotes package if it has not been installed yet
+# install.packages("remotes")
 
-devtools::install_github("mikewlcheung/metasem")
+remotes::install_github("mikewlcheung/metasem")
 ```

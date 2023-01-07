@@ -13,14 +13,14 @@
 tssem1(Cov, n, method=c("REM","FEM"), cor.analysis = TRUE, cluster=NULL,
        RE.type=c("Diag", "Symm", "Zero", "User"), RE.startvalues=0.1,
        RE.lbound=1e-10, RE.constraints=NULL, I2="I2q",
-       acov=c("weighted", "individual", "unweighted"),
+       acov=c("weighted", "individual", "unweighted"), asyCovOld=FALSE,
        model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...)
 tssem1FEM(Cov, n, cor.analysis=TRUE, model.name=NULL,
           cluster=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...)
 tssem1REM(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero","User"),
           RE.startvalues=0.1, RE.lbound=1e-10, RE.constraints=NULL,
           I2="I2q", acov=c("weighted", "individual", "unweighted"),
-          model.name=NULL, suppressWarnings=TRUE,
+          asyCovOld=FALSE, model.name=NULL, suppressWarnings=TRUE,
           silent=TRUE, run=TRUE, ...)
 }
 \arguments{
@@ -34,8 +34,9 @@ tssem1REM(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero","User"),
 }
   \item{cor.analysis}{Logical. The output is either a pooled correlation or a covariance matrix.
   }
-  \item{cluster}{A vector of characters or numbers indicating the
-	clusters. Analyses will be conducted for each cluster. It will be
+  \item{cluster}{A character vector in \code{tssem3L1} and
+	\code{tssemRobust1} or a vector of characters or numbers indicating the
+	clusters in \code{tssem1}. Analyses will be conducted for each cluster. It will be
 	ignored when \code{method="REM"}.
   }
   \item{RE.type}{Either \code{"Diag"}, \code{"Symm"},  
@@ -49,7 +50,7 @@ tssem1REM(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero","User"),
 	fixed-effects analysis.
     \code{"User"}, the user has to specify the variance component via the
 	\code{RE.constraints} argument. This argument will be ignored when \code{method="FEM"}.}
-  \item{RE.startvalues}{Starting values on the
+   \item{RE.startvalues}{Starting values on the
 	diagonals of the variance component of the random effects. It will be ignored when \code{method="FEM"}.}
   \item{RE.lbound}{Lower bounds on the diagonals of the variance
 	component of the random effects. It will be ignored when
@@ -70,7 +71,7 @@ tssem1REM(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero","User"),
 	harmonic mean and the arithmetic mean of the within-study sampling
 	variances (Xiong, Miller, & Morris, 2010). More than one options are possible. If \code{intervals.type="LB"}, 95\% confidence intervals on the heterogeneity indices will be constructed. 
   }
-  \item{acov}{If it is \code{individual}, the sampling variance-covariance
+\item{acov}{If it is \code{individual}, the sampling variance-covariance
 	matrices are calculated based on individual correlation/covariance
 	matrix. If it is either \code{unweighted} or \code{weighted} (the default), the average
 	correlation/covariance matrix is calculated based on the unweighted
@@ -78,12 +79,14 @@ tssem1REM(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero","User"),
 	correlation/covariance matrix is used to calculate the sampling
 	variance-covariance matrices. This argument is ignored with the
 	\code{method="FEM"} argument.}
+\item{asyCovOld}{Whether the old \code{asyCov} is used. See \code{\link[metaSEM]{asyCov}}.}  
   \item{model.name}{A string for the model name in \code{\link[OpenMx]{mxModel}}. 
   }  
   \item{suppressWarnings}{Logical. If \code{TRUE}, warnings are
 	suppressed. It is passed to \code{\link[OpenMx]{mxRun}}.}
   \item{silent}{Logical. An argument to be passed to \code{\link[OpenMx]{mxRun}}}
-  \item{run}{Logical. If \code{FALSE}, only return the mx model without running the analysis.}  
+  \item{run}{Logical. If \code{FALSE}, only return the mx model without
+	running the analysis.} 
   \item{\dots}{Further arguments to be passed to \code{\link[OpenMx]{mxRun}}
 }
 }
@@ -103,9 +106,6 @@ tssem1REM(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero","User"),
  Cheung, M. W.-L., & Chan, W. (2009). A two-stage approach to synthesizing covariance matrices in meta-analytic structural equation modeling. \emph{Structural Equation Modeling}, \bold{16}, 28-53.
 }
 \author{Mike W.-L. Cheung <mikewlcheung@nus.edu.sg>
-}
-\note{If the \code{cluster} argument is used, it returns a list of
-  results on each cluster.
 }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~

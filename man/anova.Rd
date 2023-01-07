@@ -1,7 +1,7 @@
 \name{anova}
 \alias{anova.wls}
 \alias{anova.meta}
-\alias{anova.meta3X}
+\alias{anova.meta3LFIML}
 \alias{anova.reml}
 \alias{anova.osmasem}
 \title{Compare Nested Models with Likelihood Ratio Statistic
@@ -12,7 +12,7 @@
 \usage{
 \method{anova}{wls}(object, \dots, all=FALSE)
 \method{anova}{meta}(object, \dots, all=FALSE)
-\method{anova}{meta3X}(object, \dots, all=FALSE)
+\method{anova}{meta3LFIML}(object, \dots, all=FALSE)
 \method{anova}{reml}(object, \dots, all=FALSE)
 \method{anova}{osmasem}(object, \dots, all=FALSE)
 }
@@ -24,7 +24,7 @@
   \item{\dots}{An object or a list of objects of various classes. It will be passed to the
 	\code{comparison} argument in \code{\link[OpenMx]{mxCompare}}.
   }  
-  \item{all}{A boolean value on whether to compare all bases with all
+  \item{all}{A Boolean value on whether to compare all bases with all
 	comparisons. It will be passed to the \code{all} argument in
 	\code{\link[OpenMx]{mxCompare}}.}
 }

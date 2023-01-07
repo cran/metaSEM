@@ -11,11 +11,12 @@
 \usage{
 wls(Cov, aCov, n, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
     diag.constraints=FALSE, cor.analysis=TRUE, intervals.type=c("z","LB"),
-    mx.algebras=NULL, model.name=NULL, suppressWarnings=TRUE,
-    silent=TRUE, run=TRUE, ...)
+    mx.algebras=NULL, mxModel.Args=NULL, subset.variables=NULL, model.name=NULL,
+    suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...)
 tssem2(tssem1.obj, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
-    diag.constraints=FALSE, intervals.type=c("z", "LB"), mx.algebras=NULL,
-    model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...) 
+       diag.constraints=FALSE, intervals.type=c("z", "LB"), mx.algebras=NULL,
+       mxModel.Args=NULL, subset.variables=NULL, model.name=NULL, suppressWarnings=TRUE,
+       silent=TRUE, run=TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -85,16 +86,25 @@ tssem2(tssem1.obj, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL,
 	\code{diag.constraints=FALSE}) have been defined internally. You
 	should not create new matrices using these names.
   }
+\item{mxModel.Args}{A list of arguments passed to
+  \code{\link[OpenMx]{mxModel}}. These include, for example, additional
+  \code{\link[OpenMx]{mxMatrix}} and \code{\link[OpenMx]{mxConstraint}}.}  
   \item{model.name}{A string for the model name in
 	\code{\link[OpenMx]{mxModel}}. If it is missing, the default is
 	"TSSEM2 (or WLS) Analysis of Correlation Structure" for \code{cor.analysis=TRUE} and
 	"TSSEM2 (or WLS) Analysis of Covariance Structure" for \code{cor.analysis=FALSE}.
-	}
+  }
+\item{subset.variables}{An optional character vector of variable names to select variables in the analysis. For example, there are 10
+  variables in \code{Cov}, say, x1 to x10. We may use
+  \code{c("x1", "x2", "x3")} to select three variables in the analysis. Please note that this argument does not reorder the
+  data. That is, \code{c("x3", "x2", "x1")} is the same as
+	\code{c("x1", "x2", "x3")}.}  
   \item{suppressWarnings}{Logical. If \code{TRUE}, warnings are
 	suppressed. The argument to be passed to \code{\link[OpenMx]{mxRun}}.}
   \item{silent}{Logical. An argument to be passed to \code{\link[OpenMx]{mxRun}}}
-  \item{run}{Logical. If \code{FALSE}, only return the mx model without running the analysis.}  
-  \item{\dots}{Further arguments to be passed to \code{\link[OpenMx]{mxRun}}.
+  \item{run}{Logical. If \code{FALSE}, only return the mx model without
+	running the analysis.} 
+   \item{\dots}{Further arguments to be passed to \code{\link[OpenMx]{mxRun}}.
 }
 }
 
@@ -142,6 +152,7 @@ McArdle, J. J., & MacDonald, R. P. (1984). Some algebraic properties of the Reti
   \code{\link[metaSEM]{Hunter83}}, \code{\link[metaSEM]{issp89}}, \code{\link[metaSEM]{issp05}}
 }
 \examples{
+\dontrun{
 #### Analysis of correlation structure
 R1.labels <- c("a1", "a2", "a3", "a4")
 
@@ -176,6 +187,15 @@ wls.fit1b <- wls(Cov=R1, aCov=acovR1, n=n, Fmatrix=F1, Smatrix=S1, Amatrix=A1,
                  cor.analysis=TRUE, intervals="LB")
 summary(wls.fit1b)
 
+## Select 3 variables to analyze
+model2 <- "f =~ a1 + a2 + a3"
+
+RAM2 <- lavaan2RAM(model2, obs.variables=R1.labels[-4])
+
+wls.fit1c <- wls(Cov=R1, aCov=acovR1, n=n, RAM=RAM2,
+                 cor.analysis=TRUE, subset.variables=c("a1", "a2", "a3"))
+summary(wls.fit1c)
+
 #### Multiple regression analysis using lavaan specification
 R2.labels <- c("y", "x1", "x2")
 
@@ -185,17 +205,17 @@ R2 <- matrix(c(1.00, 0.22, 0.24,
                dimnames=list(R2.labels, R2.labels))
 acovR2 <- asyCov(R2, n)
 
-model2 <- "y ~ x1 + x2
+model3 <- "y ~ x1 + x2
            ## Variances of x1 and x2 are 1
            x1 ~~ 1*x1
            x2 ~~ 1*x2
            ## x1 and x2 are correlated
            x1 ~~ x2"
 
-RAM2 <- lavaan2RAM(model2, obs.variables=R2.labels)
+RAM3 <- lavaan2RAM(model3, obs.variables=R2.labels)
 
-wls.fit2a <- wls(Cov=R2, aCov=acovR2, n=n, RAM=RAM2,
-                 cor.analysis=TRUE, intervals="LB")
+wls.fit2a <- wls(Cov=R2, aCov=acovR2, n=n, RAM=RAM3,
+                 cor.analysis=TRUE, intervals="z")
 summary(wls.fit2a)
 
 
@@ -255,5 +275,6 @@ F3 <- c(TRUE,TRUE,TRUE,TRUE,FALSE)
 wls.fit3b <- wls(Cov=R3, aCov=acovS3, n=n, Amatrix=A3, Smatrix=S3,
                 Fmatrix=F3, cor.analysis=FALSE)
 summary(wls.fit3b)
+}
 }
 \keyword{ tssem }

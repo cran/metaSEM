@@ -8,8 +8,9 @@ It converts models specified in \code{lavaan} model syntax to RAM models.
 }
 \usage{
 lavaan2RAM(model, obs.variables = NULL, A.notation = "ON",
-           S.notation = "WITH", M.notation = "mean", auto.var = TRUE,
-           std.lv = TRUE, ngroups = 1, ...)
+           S.notation = "WITH", M.notation = "mean",
+           A.start=0.1, S.start=0.5, M.start=0,
+           auto.var = TRUE, std.lv = TRUE, ngroups = 1, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -33,6 +34,15 @@ lavaan2RAM(model, obs.variables = NULL, A.notation = "ON",
   are not included in the lavaan model. For example, the label will be "ymean" for
   the mean of "y" if \code{M.notation="mean"}. 
 }
+\item{A.start}{A numeric value of starting value for the \code{Amatrix}
+  when the starting values are not provided.
+}
+\item{S.start}{A numeric value of starting value for the \code{Smatrix}
+  when the starting values are not provided.
+}
+\item{M.start}{A numeric value of starting value for the \code{Mmatrix}
+  when the starting values are not provided.
+}
 \item{auto.var}{Logical. If \code{TRUE}, the residual variances and the
   variances of exogenous latent variables are included in the model and
   set free. See \code{\link[lavaan]{model.syntax}}.
@@ -47,7 +57,11 @@ lavaan2RAM(model, obs.variables = NULL, A.notation = "ON",
 \item{\dots}{Further arguments to be passed to \code{\link[lavaan]{model.syntax}}}. Please note that \code{fixed.x} is set at \code{FALSE}. Thus it cannot be passed to \dots.
 }
 \details{
-It uses the \code{\link[lavaan]{model.syntax}} to do the conversion.
+It uses the \code{\link[lavaan]{model.syntax}} to do the
+conversion. Experimental: functions of parameters (`:=` in lavaan) and
+constraints (`==`, `>`, and `<` in lavaan) will be converted to
+mxAlgebra and mxConstraint in OpenMx. As there are differences between
+lavaan and OpenMx, they may not work properly.
 }
 \value{
   A list of RAM specification with \code{A}, \code{S}, \code{F}, and \code{M} matrices.
@@ -64,7 +78,7 @@ It uses the \code{\link[lavaan]{model.syntax}} to do the conversion.
 \examples{
 ## Regression model on correlation matrix
 model1 <- "## y is modelled by x1, x2, and x3
-           y ~ x1 + x2 + x3
+           y ~ b1*x1 + b2*x2 + b3*x3
            ## Fix the independent variables at 1
            x1 ~~ 1*x1
            x2 ~~ 1*x2
@@ -72,7 +86,11 @@ model1 <- "## y is modelled by x1, x2, and x3
            ## Declare the correlations among the independent variables
            x1 ~~ x2
            x1 ~~ x3
-           x2 ~~ x3"
+           x2 ~~ x3
+           ## Constraint
+           b3 == b1 + b2
+           ## Function of parameters
+           fn1 := b1*b2^b3"
 
 ## Compare the arrangements of variables with and without
 ## specifying the obs.variables arguments. 

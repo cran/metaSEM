@@ -1,7 +1,8 @@
 \name{osmasemSRMR}
 \alias{osmasemSRMR}
-\title{Calculate the SRMR in OSMASEM}
-\description{It calculates the standardized root mean squared residuals (SRMR) in OSMASEM.  
+\title{Calculate the SRMR in OSMASEM and OSMASEM3L}
+\description{It calculates the standardized root mean squared residuals
+  (SRMR) in OSMASEM and OSMASEM3L.  
 }
 \usage{
 osmasemSRMR(x)
@@ -16,7 +17,9 @@ the heterogeneity variances are ignored in the calculations.}
 
 \author{Mike W.-L. Cheung <mikewlcheung@nus.edu.sg>
 }
-\seealso{ \code{\link[metaSEM]{osmasem}}, \code{\link[metaSEM]{Nohe15}}
+\seealso{ \code{\link[metaSEM]{osmasem}}, 
+  \code{\link[metaSEM]{Nohe15}}
 }
 
-\keyword{ osmasem }
+\keyword{osmasem}
+\keyword{osmasem3L}

@@ -40,12 +40,12 @@
      what="est", nCharNodes=0, nCharEdges=0,
      layout=c("tree", "circle", "spring", "tree2", "circle2"),
      sizeMan=8, sizeLat=8, edge.label.cex=1.3, color="white",
-     weighted=FALSE, \dots)
+    weighted=FALSE, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{An object returned from either a lavaan model class
-	\code{character}, \code{osmasem}, \code{wls} or \code{meta}
+	\code{character}, \code{osmasem}, \code{osmasem3L}, \code{wls} or \code{meta}
   }
   \item{effect.sizes}{Numeric values indicating which effect sizes to
 	be plotted. At least two effect sizes are required. To plot the effect sizes of \eqn{y_1}{y1} and

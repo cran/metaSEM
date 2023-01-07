@@ -163,11 +163,16 @@ test_that("list2matrix() works correctly", {
 
 test_that("lavaan2RAM() works correctly", {
     ## Multiple regression with 2 groups
-    model1 <- "y ~ 1 + c(b1, b2)*x1 + c(b3, b4)*x2"
-    model2 <- list("1"="y ~ 1 + b1*x1 + b3*x2",
+    model1 <- "y ~ 1 + c(b1, b2)*x1 + c(b3, b4)*x2
+               fn1 := b1 + b2
+               b3 == b4"
+    model2 <- list("1"="y ~ 1 + b1*x1 + b3*x2
+                        fn1 := b1 + b2
+                        b3 == b4",
                    "2"="y ~ 1 + b2*x1 + b4*x2")       
     RAM1 <- lavaan2RAM(model1, ngroups=2)
     RAM2 <- lapply(model2, lavaan2RAM)
+    names(RAM1) <- c("1", "2")
     expect_identical(RAM1, RAM2)
 
     ## CFA with 2 groups
@@ -176,8 +181,30 @@ test_that("lavaan2RAM() works correctly", {
                    "2"="f =~ a*x1 + b2*x2 + c2*x3 + d2*x4")
     RAM3 <- lavaan2RAM(model3, ngroups=2)
     RAM4 <- lapply(model4, lavaan2RAM)
+    names(RAM3) <- c("1", "2")
     expect_identical(RAM3, RAM4)
-})
+
+    ## Single group multiple regression
+    model5 <- "y ~ 1 + b1*x1 + b2*x2"
+    RAM5a <- lavaan2RAM(model5)
+    ## RAM5b: hard-coded
+    RAM5b <- list(A = structure(c("0", "0", "0", "0.1*b1", "0", "0", "0.1*b2", 
+                                  "0", "0"), .Dim = c(3L, 3L),
+                                .Dimnames = list(c("y", "x1", "x2"),
+                                                 c("y", "x1", "x2"))),
+                  S = structure(c("0.5*yWITHy", "0", "0", 
+                                  "0", "0.5*x1WITHx1", "0*x1WITHx2", "0",
+                                  "0*x1WITHx2", "0.5*x2WITHx2"), .Dim = c(3L, 3L),
+                                .Dimnames = list(c("y", "x1", "x2"),
+                                                 c("y", "x1", "x2"))),
+                  F = structure(c(1, 0, 0, 0, 1, 0, 0, 0, 1), .Dim = c(3L, 3L),
+                                .Dimnames = list(c("y", "x1", "x2"),
+                                                 c("y", "x1", "x2"))), 
+                  M = structure(c("0*ymean", "0", "0"), .Dim = c(1L, 3L),
+                                .Dimnames = list("1", c("y", "x1", "x2"))))
+    expect_identical(RAM5a, RAM5b)
+
+ })
 
 test_that("as.symMatrix() works correctly", {
     A1 <- matrix(c(1:3, "a", "*b", "6*c", 7:9), ncol=3, nrow=3)
@@ -345,7 +372,9 @@ test_that("Cor2DataFrame() works correctly", {
                               RelS2=Nohe15A1$RelS2,
                               FemalePer=Nohe15A1$FemalePer,
                               Publication=Nohe15A1$Publication,
-                              Lag=Nohe15A1$Lag, check.names=FALSE)
+                              Lag=Nohe15A1$Lag,
+                              Country=Nohe15A1$Country,
+                              check.names=FALSE)
     my.df2 <- Cor2DataFrame(Nohe15A1, append.vars=TRUE)
     expect_equal(my.df1, my.df2, tolerance = .001)  
 })
@@ -670,4 +699,79 @@ test_that("Handling NA in diagonals in tssem1FEM() correctly", {
     C2[2,3] <- C2[3,2] <- .5
     C3[1,2] <- C3[2,1] <- .5
     expect_error(tssem1(Cov=list(C1, C2,C3), n=c(50, 50, 50), method="FEM"))
+})
+
+test_that("Testing new asyCov() correctly", {
+
+    set.seed(123456)
+    
+    tolerance <- 1e-4
+    
+    new  <- asyCov(x=Becker92$data, n=Becker92$n, acov="individual")
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Becker92$data, n=Becker92$n, acov="individual")
+    expect_equal(new, old, tolerance=tolerance)
+
+    new  <- asyCov(x=Becker92$data, n=Becker92$n, acov="weighted")
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Becker92$data, n=Becker92$n, acov="weighted")
+    expect_equal(new, old, tolerance=tolerance)
+
+    new  <- asyCov(x=Becker92$data, n=Becker92$n, acov="unweighted")
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Becker92$data, n=Becker92$n, acov="unweighted")
+    expect_equal(new, old, tolerance=tolerance)
+
+    new  <- asyCov(x=Becker92$data, n=Becker92$n, acov="individual", as.matrix=FALSE)
+    old <- asyCovOld(x=Becker92$data, n=Becker92$n, acov="individual", as.matrix=FALSE)
+    expect_equal(new, old, tolerance=tolerance)    
+
+    new  <- asyCov(x=Cheung09$data, n=Cheung09$n, acov="individual")
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Cheung09$data, n=Cheung09$n, acov="individual")
+    expect_equal(new, old, tolerance=tolerance)
+
+    new  <- asyCov(x=Cheung09$data, n=Cheung09$n, acov="weighted")
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Cheung09$data, n=Cheung09$n, acov="weighted")
+    expect_equal(new, old, tolerance=tolerance)
+
+    new  <- asyCov(x=Cheung09$data, n=Cheung09$n, acov="unweighted")
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Cheung09$data, n=Cheung09$n, acov="unweighted")
+    expect_equal(new, old, tolerance=tolerance)
+
+    new  <- asyCov(x=Cheung09$data, n=Cheung09$n, acov="individual", as.matrix=FALSE)
+    old <- asyCovOld(x=Cheung09$data, n=Cheung09$n, acov="individual", as.matrix=FALSE)
+    expect_equal(new, old, tolerance=tolerance)
+
+    ## Lower tolerance of cor.analysis=F
+    tolerance <- 1e-3
+    new  <- asyCov(x=Becker92$data, n=Becker92$n, acov="individual", cor.analysis=FALSE)
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Becker92$data, n=Becker92$n, acov="individual", cor.analysis=FALSE)
+    expect_equal(new, old, tolerance=tolerance)
+
+    new  <- asyCov(x=Becker92$data, n=Becker92$n, acov="weighted", cor.analysis=FALSE)
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Becker92$data, n=Becker92$n, acov="weighted", cor.analysis=FALSE)
+    expect_equal(new, old, tolerance=tolerance)
+
+    new  <- asyCov(x=Becker92$data, n=Becker92$n, acov="unweighted", cor.analysis=FALSE)
+    row.names(new) <- NULL
+    old <- asyCovOld(x=Becker92$data, n=Becker92$n, acov="unweighted", cor.analysis=FALSE)
+    expect_equal(new, old, tolerance=tolerance)
+
+    ## Not equal
+    ## new  <- asyCov(x=Becker92$data, n=Becker92$n, acov="individual", as.matrix=FALSE, cor.analysis=FALSE)
+    ## old <- asyCovOld(x=Becker92$data, n=Becker92$n, acov="individual", as.matrix=FALSE, cor.analysis=FALSE)
+    ## expect_equal(new, old, tolerance=tolerance)   
+    
+})
+
+context("Checking meta function")
+test_that("meta() observed statistics is correct", {
+
+    fit <- summary(meta(r, r_v, data=Jaramillo05))
+    expect_equal(fit$obsStat, 61)
 })

@@ -13,7 +13,7 @@ tssem1FEM <- function(Cov, n, cor.analysis=TRUE, model.name=NULL,
           y
       }
       if (is.list(x)) lapply(x, add_NA) else add_NA(x)
-  }  
+  }
   ## Mark the diagonals as NA when all correlation coefficients are NA
   Cov <- addDiagNA(Cov)
 
@@ -24,13 +24,13 @@ tssem1FEM <- function(Cov, n, cor.analysis=TRUE, model.name=NULL,
   } else {
       Cov <- (Cov+t(Cov))/2
   }
-        
-  ## Split the data by cluster  
+
+  ## Split the data by cluster
   if (!is.null(cluster)) {
     data.cluster <- tapply(Cov, cluster, function(x) {x})
     n.cluster <- tapply(n, cluster, function(x) {x})
     out <- list()
-    for (i in 1:length(data.cluster)) {
+    for (i in seq_along(data.cluster)) {
       ## Need to correct it to tssem1()
       out[[i]] <- tssem1FEM(data.cluster[[i]], n.cluster[[i]],
                            cor.analysis=cor.analysis, model.name=model.name,
@@ -164,7 +164,8 @@ tssem1FEM <- function(Cov, n, cor.analysis=TRUE, model.name=NULL,
 tssem1REM <- function(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero", "User"),
                       RE.startvalues=0.1, RE.lbound = 1e-10, RE.constraints=NULL,
                       I2="I2q", acov=c("weighted", "individual", "unweighted"),
-                      model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...) {
+                      asyCovOld=FALSE, model.name=NULL, suppressWarnings=TRUE, silent=TRUE,
+                      run=TRUE, ...) {
   ## It handles missing effect sizes rather than missing correlations. Thus, it is more flexible than tssem1FEM().
   ## ACOV is calculated without missing data by assuming 1 and 0 for the missing variances and covariances.
   ## Missing values are indicated by the missing effect sizes.
@@ -177,19 +178,27 @@ tssem1REM <- function(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero
   ## Get the original variable names
   original.names <- colnames(Cov[[1]])
 
-  if (cor.analysis) {
-      ## Replace diagonals with 1.0
-      my.complete <- lapply(Cov, function (x) { Diag(x)[is.na(Diag(x))] <- 1; x })
-  } else {
-      ## Replace diagonals with the mean of diagonals
-      my.complete <- lapply(Cov, function (x) { Diag(x)[is.na(Diag(x))] <- mean(Diag(x), na.rm=TRUE); x })
-  }
-  ## Replace missing variables with 0.0 regardless of cor.analysis
-  my.complete <- lapply(my.complete, function (x) { x[is.na(x)] <- 0; x })
-
   ## Calculate the asymptotic sampling covariance matrix of the correlation matrix
-  acovR <- asyCov(x=my.complete, n=n, cor.analysis=cor.analysis, dropNA=FALSE, as.matrix=TRUE, acov=acov)
-
+  if (asyCovOld) {
+      ## SEM approach is sensitive to NA. Additional care is required.      
+        
+      if (cor.analysis) {
+        ## Replace diagonals with 1.0
+        my.complete <- lapply(Cov, function (x) { Diag(x)[is.na(Diag(x))] <- 1; x })
+      } else {
+        ## Replace diagonals with the mean of diagonals
+        my.complete <- lapply(Cov, function (x) { Diag(x)[is.na(Diag(x))] <- mean(Diag(x), na.rm=TRUE); x })
+      }
+      
+      ## Replace missing variables with 0.0 regardless of cor.analysis
+      my.complete <- lapply(my.complete, function (x) { x[is.na(x)] <- 0; x })
+          
+      acovR <- asyCovOld(x=my.complete, n=n, cor.analysis=cor.analysis, dropNA=FALSE, as.matrix=TRUE, acov=acov)
+  } else {
+      ## asyCov() will break down when there are NA
+      acovR <- asyCov(x=Cov, n=n, cor.analysis=cor.analysis, as.matrix=TRUE, acov=acov)
+  }
+    
   ## Fixed a bug that Cov is covariance matrix while cor.analysis is TRUE
   ## When cor.analysis=TRUE, the old version just takes the lower triangle without converting covariance into correlation.
   if (cor.analysis) {
@@ -244,24 +253,48 @@ tssem1REM <- function(Cov, n, cor.analysis=TRUE, RE.type=c("Diag", "Symm", "Zero
 tssem1 <- function(Cov, n, method=c("REM", "FEM"), cor.analysis=TRUE, cluster=NULL,
                    RE.type=c("Diag", "Symm", "Zero", "User"), RE.startvalues=0.1, RE.lbound=1e-10,
                    RE.constraints=NULL, I2="I2q", acov=c("weighted", "individual", "unweighted"),
-                   model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...) {
+                   asyCovOld=FALSE, model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...) {
   method <- match.arg(method)
   switch(method,
     FEM = out <- tssem1FEM(Cov=Cov, n=n, cor.analysis=cor.analysis, model.name=model.name,
                           cluster=cluster, suppressWarnings=suppressWarnings, silent=silent, run=run, ...),
     REM = out <- tssem1REM(Cov=Cov, n=n, cor.analysis=cor.analysis, RE.type=RE.type,
                           RE.startvalues=RE.startvalues, RE.lbound=RE.lbound, RE.constraints=RE.constraints,
-                          I2=I2, acov=acov, model.name=model.name, suppressWarnings=suppressWarnings,
-                          silent=silent, run=run, ...) )
+                          I2=I2, acov=acov, asyCovOld=asyCovOld, model.name=model.name,
+                          suppressWarnings=suppressWarnings, silent=silent, run=run, ...) )
   out
 }
 
 ## Known bug: wls() will fall into loop when the Amatrix is zero
 wls <- function(Cov, aCov, n, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL, 
                 diag.constraints=FALSE, cor.analysis=TRUE, intervals.type=c("z", "LB"), 
-                mx.algebras=NULL, model.name=NULL, suppressWarnings=TRUE, 
+                mx.algebras=NULL, mxModel.Args=NULL, subset.variables=NULL,
+                model.name=NULL, suppressWarnings=TRUE, 
                 silent=TRUE, run=TRUE, ...) {
 
+    ## Filter out variables not used in the analysis
+    if (!is.null(subset.variables)) {
+        obslabels <- rownames(Cov)
+        index  <- !(subset.variables %in% obslabels)
+        if (any(index)) {
+            stop(paste0(paste0(subset.variables[index], collapse = ", "), " are not in the \"Cov\".\n"))
+        }
+        index <- (obslabels %in% subset.variables)
+        ## A square matrix of dimensions subset.variables
+        index.mat <- matrix(TRUE, nrow=length(index), ncol=length(index))
+        index.mat[!index, ] <- index.mat[, !index] <- FALSE
+
+        if (cor.analysis) {
+            subset.acov <- vechs(index.mat)
+        } else {
+            subset.acov <- vech(index.mat)
+        }
+
+        ## Filter the variables
+        Cov <- Cov[subset.variables, subset.variables]
+        aCov <- aCov[subset.acov, subset.acov]
+    }
+    
     ## Read RAM first. If it is not specified, read individual matrices
     if (!is.null(RAM)) {
         Amatrix <- as.mxMatrix(RAM$A, name="Amatrix")
@@ -485,6 +518,23 @@ wls <- function(Cov, aCov, n, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL
                         vecS, invAcov, obj, objective, sampleS, mxCI(c("Amatrix", "Smatrix")))  
   }
 
+  ## Add additiona mxalgebras from RAM
+  ## Initialize as NULL  
+  algebra.names <- NULL  
+  if (!is.null(RAM$mxalgebras)) {
+    for (i in seq_along(RAM$mxalgebras)) {
+      mx.model <- mxModel(mx.model, RAM$mxalgebras[[i]])
+    }
+    ## check if they are mxalgebra, not mxconstraint
+    algebra.names <- names(RAM$mxalgebras)
+    isalgebra <- !grepl("^constraint[0-9]+", algebra.names)
+    if (any(isalgebra)) {
+        ## Remove names for mxconstraints
+        algebra.names <- algebra.names[isalgebra]
+        mx.model <- mxModel(mx.model, mxCI(algebra.names))
+    }
+  }  
+    
   ## Add additional mxAlgebras
   if (!is.null(mx.algebras)) {
     for (i in seq_along(mx.algebras)) {
@@ -492,7 +542,14 @@ wls <- function(Cov, aCov, n, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL
     }
     mx.model <- mxModel(mx.model, mxCI(names(mx.algebras)))
   }
-
+    
+  ## Add additional arguments to mxModel
+  if (!is.null(mxModel.Args)) {
+      for (i in seq_along(mxModel.Args)) {
+          mx.model <- mxModel(mx.model, mxModel.Args[[i]])
+      }
+  }
+    
   ## Return mx model without running the analysis
   if (run==FALSE) return(mx.model)
 
@@ -508,7 +565,8 @@ wls <- function(Cov, aCov, n, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL
       out <- list(call=match.call(), Cov=Cov, aCov=aCov, noObservedStat=ps, n=n, cor.analysis=cor.analysis, 
                   diag.constraints=diag.constraints, Constraints=Constraints,
                   indepModelChisq=.indepwlsChisq(S=Cov, aCov=aCov, cor.analysis=cor.analysis),
-                  indepModelDf=no.var*(no.var-1)/2, mx.model=mx.model, mx.fit=mx.fit, mx.algebras=names(mx.algebras), 
+                  indepModelDf=no.var*(no.var-1)/2, mx.model=mx.model, mx.fit=mx.fit,
+                  mx.algebras=c(names(mx.algebras), algebra.names), 
                   intervals.type=intervals.type)
       class(out) <- 'wls'
   }
@@ -517,15 +575,16 @@ wls <- function(Cov, aCov, n, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL
 
 
 tssem2 <- function(tssem1.obj, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NULL, diag.constraints=FALSE,
-                   intervals.type = c("z", "LB"), mx.algebras=NULL, model.name=NULL, suppressWarnings=TRUE,
-                   silent=TRUE, run=TRUE, ...) {
+                   intervals.type = c("z", "LB"), mx.algebras=NULL, mxModel.Args=NULL, subset.variables=NULL,
+                   model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...) {
   if ( !is.element( class(tssem1.obj)[1], c("tssem1FEM.cluster", "tssem1FEM", "tssem1REM")) )
       stop("\"tssem1.obj\" must be of neither class \"tssem1FEM.cluster\", class \"tssem1FEM\" or \"tssem1REM\".")
 
   switch(class(tssem1.obj)[1],
          tssem1FEM.cluster = { out <- lapply(tssem1.obj, tssem2, RAM=RAM, Amatrix=Amatrix, Smatrix=Smatrix, Fmatrix=Fmatrix,
                                              diag.constraints=diag.constraints, intervals.type=intervals.type,
-                                             mx.algebras=mx.algebras,
+                                             mx.algebras=mx.algebras, mxModel.Args=mxModel.Args,
+                                             subset.variables=subset.variables,
                                              model.name=model.name, suppressWarnings=suppressWarnings, silent=silent,
                                              run=run, ...)
                               class(out) <- "wls.cluster" },
@@ -542,15 +601,19 @@ tssem2 <- function(tssem1.obj, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NUL
                       out <- wls(Cov=coef.tssem1FEM(tssem1.obj), aCov=vcov.tssem1FEM(tssem1.obj),
                                  n=sum(tssem1.obj$n), RAM=RAM, Amatrix=Amatrix, Smatrix=Smatrix, Fmatrix=Fmatrix,
                                  diag.constraints=diag.constraints, cor.analysis=tssem1.obj$cor.analysis,
-                                 intervals.type=intervals.type, mx.algebras=mx.algebras,
+                                 intervals.type=intervals.type, mx.algebras=mx.algebras, mxModel.Args=mxModel.Args,
+                                 subset.variables=subset.variables,
                                  model.name=model.name, suppressWarnings=suppressWarnings,
                                  silent=silent, run=run, ...) },
          tssem1REM = { cor.analysis <- tssem1.obj$cor.analysis
                       ## Extract the pooled correlation matrix
                       pooledS <- vec2symMat( coef(tssem1.obj, select="fixed"), diag=!cor.analysis)
-                      ## Extract the asymptotic covariance matrix of the pooled correlations
+                      dimnames(pooledS) <- list(tssem1.obj$original.names, tssem1.obj$original.names) 
+                      ## Extract the asymptotic covariance matrix of the pooled correlations                      
                       aCov <- vcov(tssem1.obj, select="fixed")
-
+                      aCov.names <- .genCorNames(x=tssem1.obj$original.names, cor.analysis=cor.analysis)
+                      dimnames(aCov) <- list(aCov.names$ylabels, aCov.names$ylabels)
+      
                       if (cor.analysis==TRUE) {
                         if (is.null(model.name)) model.name <- "TSSEM2 Correlation"
                       } else {
@@ -561,7 +624,9 @@ tssem2 <- function(tssem1.obj, RAM=NULL, Amatrix=NULL, Smatrix=NULL, Fmatrix=NUL
                       out <- wls(Cov=pooledS, aCov=aCov, n=tssem1.obj$total.n, RAM=RAM,
                                  Amatrix=Amatrix, Smatrix=Smatrix, Fmatrix=Fmatrix, diag.constraints=diag.constraints,
                                  cor.analysis=cor.analysis, intervals.type=intervals.type, mx.algebras=mx.algebras,
-                                 model.name=model.name, suppressWarnings = suppressWarnings, silent=silent, run=run, ...) })
+                                 subset.variables=subset.variables,
+                                 mxModel.Args=mxModel.Args, model.name=model.name, suppressWarnings = suppressWarnings,
+                                 silent=silent, run=run, ...) })
   out
 }
 

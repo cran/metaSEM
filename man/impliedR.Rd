@@ -7,18 +7,23 @@
   matrices based on the RAM model specification.
 }
 \usage{
-impliedR(Amatrix, Smatrix, Fmatrix, corr=TRUE, labels, ...)
-rimpliedR(Amatrix, Smatrix, Fmatrix, AmatrixSD, k=1, corr=TRUE,
-          nonPD.pop=c("replace", "nearPD", "accept"))
+impliedR(RAM, Amatrix, Smatrix, Fmatrix, corr=TRUE, labels, ...)
+rimpliedR(RAM, Amatrix, Smatrix, Fmatrix, AmatrixSD, SmatrixSD,
+          k=1, corr=TRUE, nonPD.pop=c("replace", "nearPD", "accept"))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{Amatrix}{An asymmetric matrix in the RAM specification with
+  \item{RAM}{A RAM object including a list of matrices of the model
+	returned from \code{\link[metaSEM]{lavaan2RAM}}.
+  }
+  \item{Amatrix}{If \code{RAM} is not specified, an \code{Amatrix} is
+	required. An asymmetric matrix in the RAM specification with
 	\code{\link[OpenMx]{MxMatrix-class}}. If it is a matrix, it will be
 	converted into \code{\link[OpenMx]{MxMatrix-class}} by the
 	\code{as.mxMatrix} function.
 }
-  \item{Smatrix}{A symmetric matrix in the RAM specification with
+  \item{Smatrix}{If \code{RAM} is not specified, an \code{Smatrix} is
+	required.A symmetric matrix in the RAM specification with
 	\code{\link[OpenMx]{MxMatrix-class}}. If it is a matrix, it will be
 	converted into \code{\link[OpenMx]{MxMatrix-class}} by the
 	\code{as.mxMatrix} function.
@@ -32,6 +37,8 @@ rimpliedR(Amatrix, Smatrix, Fmatrix, AmatrixSD, k=1, corr=TRUE,
   }
   \item{AmatrixSD}{Standard deviations (SD) of the elements in the
 	\code{Amatrix}. If it is missing, a matrix of zero is created.}
+  \item{SmatrixSD}{Standard deviations (SD) of the elements in the
+	\code{Smatrix}. If it is missing, a matrix of zero is created.}
   \item{k}{Number of studies.}  
   \item{corr}{Logical. The output is either the model implied
 	correlation matrix or the covariance matrix.
@@ -119,9 +126,9 @@ A2 <- matrix(c(0, 0, 0, 0.3,
 A2
 
 ## Variance of f is fixed at 1 while the other variances are free.
-S2 <- matrix(c("0.1*Err1", 0, 0, 0,
-                0, "0.1*Err2", 0, 0,
-                0, 0, "0.1*Err3", 0,
+S2 <- matrix(c("0.7*Err1", 0, 0, 0,
+                0, "0.7*Err2", 0, 0,
+                0, 0, "0.7*Err3", 0,
                 0, 0, 0, 1), nrow=4, ncol=4,
             dimnames=list(c("x1", "x2", "x3", "f"), c("x1", "x2", "x3", "f")))
 S2
@@ -129,7 +136,11 @@ S2
 F2 <- create.Fmatrix(c(1,1,1,0), as.mxMatrix=FALSE)
 F2
 
-impliedR(Amatrix=A2, Smatrix=S2, Fmatrix=F2)
+## Model implied correlation matrix
+impliedR(Amatrix=A2, Smatrix=S2, Fmatrix=F2, corr=TRUE)
+
+## Model implied covariance matrix
+impliedR(Amatrix=A2, Smatrix=S2, Fmatrix=F2, corr=FALSE)
 
 ## SD of A2
 A2SD <- matrix(c(0, 0, 0, 0.1,
@@ -140,6 +151,16 @@ A2SD <- matrix(c(0, 0, 0, 0.1,
                              c("x1", "x2", "x3", "f")))               
 A2SD
 
-rimpliedR(Amatrix=A2, Smatrix=S2, Fmatrix=F2, AmatrixSD=A2SD, k=2)
+## SD of S2: correlated between x1 and x2
+S2SD <- matrix(c(0, 0.1, 0, 0,
+                 0.1, 0, 0, 0,
+                 0, 0, 0, 0.1,
+                 0, 0, 0, 0), nrow=4, ncol=4, byrow=TRUE,
+               dimnames=list(c("x1", "x2", "x3", "f"),
+                             c("x1", "x2", "x3", "f")))               
+S2SD
+
+rimpliedR(Amatrix=A2, Smatrix=S2, Fmatrix=F2, AmatrixSD=A2SD,
+          SmatrixSD=S2SD, k=2)
 }
 \keyword{utilities}

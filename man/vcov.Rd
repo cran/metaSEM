@@ -5,7 +5,7 @@
 \alias{vcov.wls}
 \alias{vcov.wls.cluster}
 \alias{vcov.meta}
-\alias{vcov.meta3X}
+\alias{vcov.meta3LFIML}
 \alias{vcov.reml}
 \alias{vcov.MxRAMModel}
 \alias{vcov.osmasem}
@@ -22,7 +22,7 @@
 \method{vcov}{wls}(object, \dots)
 \method{vcov}{wls.cluster}(object, \dots)
 \method{vcov}{meta}(object, select = c("all", "fixed", "random"), robust=FALSE, \dots)
-\method{vcov}{meta3X}(object, select = c("all", "fixed", "random","allX"), robust=FALSE, \dots)
+\method{vcov}{meta3LFIML}(object, select = c("all", "fixed", "random","allX"), robust=FALSE, \dots)
 \method{vcov}{reml}(object, \dots)
 \method{vcov}{MxRAMModel}(object, \dots)
 \method{vcov}{osmasem}(object, select=c("fixed", "all", "random"), robust=FALSE, \dots)
@@ -33,12 +33,13 @@
   }
   \item{select}{Select \code{all} for both fixed- and random-effects parameters, \code{fixed} for the
   fixed-effects parameters or \code{random} for the random-effects
-  parameters. For \code{meta3X} objects, \code{allX} is used to extract
+  parameters. For \code{meta3LFIML} objects, \code{allX} is used to extract
   all parameters including the predictors and auxiliary variables.  
 }
   \item{robust}{Logicial. Whether to use robust standard error from \code{\link[OpenMx]{imxRobustSE}}.
 }
-  \item{\dots}{Further arguments; currently none is used}
+  \item{\dots}{Further arguments; currently not in use except for
+	\code{tssemRobust1}, which to be passed to \code{\link[metafor]{robust}}.}
 }
 
 \value{A variance-covariance matrix of the parameter estimates.
@@ -49,7 +50,7 @@
 \note{\code{vcov} returns \code{NA} when the \code{diag.constraints=TRUE}
   argument is used in \code{wls} objects.
 }
-%% ~Make other sections like Warning with \section{Warning }{....} ~
+
 \seealso{ \code{\link[metaSEM]{tssem1}}, \code{\link[metaSEM]{wls}},
   \code{\link[metaSEM]{meta}}, \code{\link[metaSEM]{reml}}
 }
