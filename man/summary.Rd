@@ -11,7 +11,8 @@
 \alias{summary.Cor3L}
 \alias{summary.bootuniR2}
 \alias{summary.osmasem}
-\alias{summary.mxRAMmodel}
+\alias{summary.osmasem2}
+\alias{summary.mxsem}
 \alias{print.summary.tssem1FEM}
 \alias{print.summary.tssem1FEM.cluster}
 \alias{print.summary.wls}
@@ -21,7 +22,7 @@
 \alias{print.summary.CorPop}
 \alias{print.summary.Cor3L}
 \alias{print.summary.bootuniR2}
-\alias{print.summary.mxRAMmodel}
+\alias{print.summary.mxsem}
 \title{Summary Method for tssem1, wls, meta, and meta3LFIML Objects
 }
 \description{It summaries results for various class.
@@ -35,19 +36,20 @@
 \method{summary}{meta}(object, homoStat=TRUE, robust=FALSE, \dots)
 \method{summary}{meta3LFIML}(object, allX=FALSE, robust=FALSE, \dots)
 \method{summary}{reml}(object, \dots)
-\method{summary}{mxRAMmodel}(object, robust=FALSE, \dots)
+\method{summary}{mxsem}(object, robust=FALSE, \dots)
 \method{summary}{CorPop}(object, \dots)
 \method{summary}{Cor3L}(object, \dots)
 \method{summary}{bootuniR2}(object, probs=c(0, 0.1, 0.5, 0.9, 1),
         cutoff.chisq.pvalue=0.05, cutoff.CFI=0.9, cutoff.SRMR=0.1,
         cutoff.RMSEA=0.05, \dots)
 \method{summary}{osmasem}(object, fitIndices=FALSE, numObs, robust=FALSE, \dots)
+\method{summary}{osmasem}(object, fitIndices=FALSE, numObs, robust=FALSE, \dots)
 \method{print.summary}{tssem1FEM}(x, \dots)
 \method{print.summary}{wls}(x, \dots)
 \method{print.summary}{meta}(x, \dots)
 \method{print.summary}{meta3LFIML}(x, \dots)
 \method{print.summary}{reml}(x, \dots)
-\method{print.summary}{mxRAMmodel}(x, \dots)
+\method{print.summary}{mxsem}(x, \dots)
 \method{print.summary}{CorPop}(x, \dots)
 \method{print.summary}{Cor3L}(x, \dots)
 \method{print.summary}{bootuniR2}(x, \dots)
@@ -56,7 +58,7 @@
   \item{object}{An object returned from either class
 	\code{tssem1FEM}, class \code{tssem1FEM.cluster},
 	class \code{tssem1REM}, class \code{wls}, class \code{wls.cluster},
-	class \code{meta}, class \code{meta3LFIML}, class \code{reml} or class \code{CorPop}.
+	class \code{meta}, class \code{meta3LFIML}, class \code{reml}, class \code{mxsem} or class \code{CorPop}.
 }
   \item{x}{An object returned from either class \code{summary.tssem1FEM},
 	class \code{tssem1FEM.cluster}, class \code{summary.wls}, class
@@ -92,7 +94,7 @@
 }
 \note{If the OpenMx status1 is either 0 or 1, the estimation is
   considered fine. If the OpenMx status1 is other values, it indicates
-  estimation problems. Users should refer to \url{https://openmx.ssri.psu.edu//wiki/errors} for more details.
+  estimation problems. Users should refer to `OpenMx` website for more details.
 }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~

@@ -3,7 +3,8 @@
 \alias{plot.character}
 \alias{plot.wls}
 \alias{plot.osmasem}
-\alias{plot.mxRAMmodel}
+\alias{plot.osmasem2}
+\alias{plot.mxsem}
 
 \title{Plot methods for various objects
 }
@@ -42,7 +43,12 @@
      layout=c("tree", "circle", "spring", "tree2", "circle2"),
      sizeMan=8, sizeLat=8, edge.label.cex=1.3, color="white",
   weighted=FALSE, \dots)
-\method{plot}{mxRAMmodel}(x, manNames=NULL, latNames=NULL, labels=c("labels", "RAM"),
+\method{plot}{osmasem2}(x, manNames=NULL, latNames=NULL, labels=c("labels", "RAM"),
+     what="est", nCharNodes=0, nCharEdges=0,
+     layout=c("tree", "circle", "spring", "tree2", "circle2"),
+     sizeMan=8, sizeLat=8, edge.label.cex=1.3, color="white",
+  weighted=FALSE, \dots)
+\method{plot}{mxsem}(x, manNames=NULL, latNames=NULL, labels=c("labels", "RAM"),
      what="est", nCharNodes=0, nCharEdges=0,
      layout=c("tree", "circle", "spring", "tree2", "circle2"),
      sizeMan=8, sizeLat=8, edge.label.cex=1.3, color="white",

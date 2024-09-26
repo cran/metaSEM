@@ -1,3 +1,16 @@
+Release 1.5.0 (Sep 26, 2024)
+====================================
+* Add dataset Chan17.
+* Add lbound and ubound in sem() and as.mxAlgebra().
+* Add a field of citations in the Jaramillo05 dataset.
+* Rename create.mxModel() to sem().
+* Add osmasem2() and friends.
+* Add mean data in issp05.
+* Support means in Cor2DataFrame().
+* Fix the means of the latent variables at 0 in lavaan2RAM().
+* Add "<~" operator in lavaan2RAM().
+* Fix startvalues not assigned in create.mxModel().
+
 Release 1.4.0 (May 15, 2024)
 ====================================
 * Release to CRAN.

@@ -2,11 +2,11 @@
 ## intervals.type="LB", it returns an error because some parameters are
 ## replaced with the new parameters in the constraints. However, the
 ## names of these new parameters are not in the CI object.
-create.mxModel <- function(model.name="mxModel", RAM=NULL, data=NULL,
-                           Cov=NULL, means=NULL, numObs,
-                           intervals.type=c("z", "LB"), startvalues=NULL,
-                           replace.constraints=FALSE, mxModel.Args=NULL,
-                           run=TRUE, silent=TRUE, ...) {
+sem <- function(model.name="sem", RAM=NULL, data=NULL, Cov=NULL,
+                means=NULL, numObs, intervals.type=c("z", "LB"),
+                startvalues=NULL, lbound=NULL, ubound=NULL,
+                replace.constraints=FALSE,
+                mxModel.Args=NULL, run=TRUE, silent=TRUE, ...) {
 
   intervals.type <- match.arg(intervals.type)
     
@@ -43,7 +43,8 @@ create.mxModel <- function(model.name="mxModel", RAM=NULL, data=NULL,
 
   ## Create an incomplete model, which will be used to store other mx objects.
   mx.model <- mxModel(model.name, mx.data, expFun, mxFitFunctionML())
-  
+
+  ## Note. startvalues may overwrite the starting values in RAM
   ## Collate the starting values from RAM and add them to startvalues
   para.labels <- c(Amatrix$labels[Amatrix$free], Smatrix$labels[Smatrix$free],
                    Mmatrix$labels[Mmatrix$free])
@@ -52,9 +53,27 @@ create.mxModel <- function(model.name="mxModel", RAM=NULL, data=NULL,
   ## Name the starting values with names, which is consistent with the startvalues
   names(para.values) <- para.labels
   para.values <- as.list(para.values)
-  ## Remove starting values from para.values if they are overlapped with startvalues    
-  para.values[names(para.values) %in% names(startvalues)] <- NULL
-  startvalues <- c(startvalues, para.values)
+
+  ## Prepare startvalues
+  if (is.null(startvalues)) {## Note. startvalues may overwrite the starting values in RAM
+    startvalues <- para.values
+  } else {
+    ## Remove starting values from para.values if they are overlapped with startvalues    
+    para.values[names(para.values) %in% names(startvalues)] <- NULL
+    startvalues <- c(startvalues, para.values)
+
+    ## Replace the startvalues in Amatrix, Smatrix, and Mmatrix
+    for (i in seq_along(startvalues)) {
+      Amatrix$values[Amatrix$labels==names(startvalues)[i]] <- startvalues[[i]]
+      Smatrix$values[Smatrix$labels==names(startvalues)[i]] <- startvalues[[i]]
+      Mmatrix$values[Mmatrix$labels==names(startvalues)[i]] <- startvalues[[i]]
+    }
+  }
+
+  ## Add lbound and ubound
+  Amatrix <- .addbound(Amatrix, lbound=lbound, ubound=ubound)
+  Smatrix <- .addbound(Smatrix, lbound=lbound, ubound=ubound)
+  Mmatrix <- .addbound(Mmatrix, lbound=lbound, ubound=ubound)
   
   ## Extract a local copy for ease of reference
   ## Remove starting values for ease of matching
@@ -110,42 +129,45 @@ create.mxModel <- function(model.name="mxModel", RAM=NULL, data=NULL,
   if (all(A==as.symMatrix(RAM$A))) {
     mx.model <- mxModel(mx.model, Amatrix)
   } else {
-    A <- as.mxAlgebra(A, startvalues=startvalues, name="Amatrix")
+    A <- as.mxAlgebra(A, startvalues=startvalues, lbound=lbound, ubound=ubound,
+                      name="Amatrix")
     mx.model <- mxModel(mx.model, A$mxalgebra, A$parameters, A$list)
   }
 
   if (all(S==as.symMatrix(RAM$S))) {
     mx.model <- mxModel(mx.model, Smatrix)
   } else {
-    S <- as.mxAlgebra(S, startvalues=startvalues, name="Smatrix")
+    S <- as.mxAlgebra(S, startvalues=startvalues, lbound=lbound, ubound=ubound,
+                      name="Smatrix")
     mx.model <- mxModel(mx.model, S$mxalgebra, S$parameters, S$list)
   }
          
   ## Create an identity matrix from the no. of columens of Fmatrix,
   ## including all latent and observed variables
   Id <- as.mxMatrix(diag(ncol(Fmatrix$values)), name="Id")
-
-  ## Expected covariance matrix and means of the observed and latent variables
   Id_A <- mxAlgebra(solve(Id - Amatrix), name="Id_A")
+  
+  ## Note. expCov and expMean are NOT used in the fit function.
+  ## They are included so the implied structures include the latent variables.
+  ## It may be useful for future applications.
   expCov <- mxAlgebra(Id_A %&% Smatrix, name="expCov")   
-    
+  expMean <- mxAlgebra(Mmatrix %*% t(Id_A), name="expMean")
+  
   ## Add the mean structure only if there are means
   if (!is.null(data) | !is.null(means)) {
 
     if (all(M==as.symMatrix(RAM$M))) {
       mx.model <- mxModel(mx.model, Mmatrix)
     } else {
-      M <- as.mxAlgebra(M, startvalues=startvalues, name="Mmatrix")
+      M <- as.mxAlgebra(M, startvalues=startvalues, lbound=lbound,
+                        ubound=ubound, name="Mmatrix")
       mx.model <- mxModel(mx.model, M$mxalgebra, M$parameters, M$list)
     }
-        
-    expMean <- mxAlgebra(Mmatrix %*% t(Id_A), name="expMean")
-    mx.model <- mxModel(mx.model, Fmatrix, Id, Id_A, expCov, expMean,
-                        mxCI(c("Amatrix", "Smatrix", "Mmatrix")))
+          
+    mx.model <- mxModel(mx.model, Fmatrix, Id, Id_A, expCov, expMean)
   } else {
     ## No mean structure
-    mx.model <- mxModel(mx.model, Fmatrix, Id, Id_A, expCov, 
-                        mxCI(c("Amatrix", "Smatrix")))
+    mx.model <- mxModel(mx.model, Fmatrix, Id, Id_A, expCov)
   }
   
   ## Add additional arguments to mxModel
@@ -155,6 +177,14 @@ create.mxModel <- function(model.name="mxModel", RAM=NULL, data=NULL,
     }
   }
 
+  ## New parameter labels including those in constraints
+  new.para.labels <- unique(c(A, S, M))
+  ## Get the variable names
+  new.para.labels <- all.vars(parse(text=new.para.labels))
+  ## Drop the definition variables
+  new.para.labels <- new.para.labels[!grepl("data.", new.para.labels)]
+  mx.model <- mxModel(mx.model, mxCI(new.para.labels))
+  
   ## A list of mxalgebras required SE or CI
   mxalgebras.ci <- NULL
   
@@ -174,7 +204,6 @@ create.mxModel <- function(model.name="mxModel", RAM=NULL, data=NULL,
   }
     
   if (run) {
-  
     ## Default is z
     mx.fit <- tryCatch(mxRun(mx.model, intervals=(intervals.type=="LB"),
                              suppressWarnings=TRUE, silent=TRUE, ...),
@@ -196,13 +225,27 @@ create.mxModel <- function(model.name="mxModel", RAM=NULL, data=NULL,
 
   out <- list(mx.fit=mx.fit, RAM=RAM, data=data, mxalgebras=mxalgebras.ci,
               intervals.type=intervals.type)
-  class(out) <- "mxRAMmodel"
+  class(out) <- "mxsem"
   out
 }
 
-summary.mxRAMmodel <- function(object, robust=FALSE, ...) {
-  if (!is.element("mxRAMmodel", class(object)))
-    stop("\"object\" must be an object of class \"mxRAMmodel\".")
+## Will be depreciated in the future
+create.mxModel <- function(model.name="sem", RAM=NULL, data=NULL,
+                           Cov=NULL, means=NULL, numObs,
+                           intervals.type=c("z", "LB"), startvalues=NULL,
+                           replace.constraints=FALSE, mxModel.Args=NULL,
+                           run=TRUE, silent=TRUE, ...) {
+  .Deprecated("sem")
+  sem(model.name=model.name, RAM=RAM, data=data, Cov=Cov, means=means,
+      numObs=numObs, intervals.type=intervals.type, startvalues=startvalues,
+      replace.constraints=replace.constraints, mxModel.Args=mxModel.Args,
+      run=run, silent=silent, ...)
+}
+
+
+summary.mxsem <- function(object, robust=FALSE, ...) {
+  if (!is.element("mxsem", class(object)))
+    stop("\"object\" must be an object of class \"mxsem\".")
 
   # calculate coefficients    
   my.mx <- summary(object$mx.fit)
@@ -286,13 +329,13 @@ summary.mxRAMmodel <- function(object, robust=FALSE, ...) {
               Minus2LL=my.mx$Minus2LogLikelihood,
               Mx.status1=object$mx.fit@output$status[[1]],
               informationCriteria=informationCriteria)
-    class(out) <- "summary.mxRAMmodel"
+    class(out) <- "summary.mxsem"
     out
 }
 
-print.summary.mxRAMmodel <- function(x, ...) {
-    if (!is.element("summary.mxRAMmodel", class(x))) {
-      stop("\"x\" must be an object of class \"summary.mxRAMmodel\".")
+print.summary.mxsem <- function(x, ...) {
+    if (!is.element("summary.mxsem", class(x))) {
+      stop("\"x\" must be an object of class \"summary.mxsem\".")
     }
     
     cat("95% confidence intervals: ")
@@ -321,16 +364,15 @@ print.summary.mxRAMmodel <- function(x, ...) {
     if (!(x$Mx.status1 %in% c(0,1))) warning("OpenMx status1 is neither 0 or 1. You are advised to 'rerun' it again.\n")
 }
 
-coef.mxRAMmodel <- function(object, ...) {
-  if (!is.element("mxRAMmodel", class(object)))
-    stop("\"object\" must be an object of class \"mxRAMmodel\".")
-
+coef.mxsem <- function(object, ...) {
+  if (!is.element("mxsem", class(object)))
+    stop("\"object\" must be an object of class \"mxsem\".")
   coef(object$mx.fit)
 }
 
-vcov.mxRAMmodel <- function(object, robust=FALSE, ...) {
-  if (!is.element("mxRAMmodel", class(object)))
-    stop("\"object\" must be an object of class \"mxRAMmodel\".")
+vcov.mxsem <- function(object, robust=FALSE, ...) {
+  if (!is.element("mxsem", class(object)))
+    stop("\"object\" must be an object of class \"mxsem\".")
   
   if (robust) {
     suppressMessages(imxRobustSE(object$mx.fit, details=TRUE)$cov)
@@ -339,29 +381,32 @@ vcov.mxRAMmodel <- function(object, robust=FALSE, ...) {
   } 
 }
 
-anova.mxRAMmodel <- function(object, ..., all=FALSE) {
+anova.mxsem <- function(object, ..., all=FALSE) {
   base <- lapply(list(object), function(x) x$mx.fit)
   comparison <- lapply(list(...), function(x) x$mx.fit)
   mxCompare(base=base, comparison=comparison, all=all)
 }
 
-plot.mxRAMmodel <- function(x, manNames=NULL, latNames=NULL,
-                            labels=c("labels", "RAM"), what="est", nCharNodes=0,
-                            nCharEdges=0, layout=c("tree", "circle", "spring",
-                                                   "tree2", "circle2"),
-                            sizeMan=8, sizeLat=8, edge.label.cex=1.3,
-                            color="white", weighted=FALSE, ...) {
-
+plot.mxsem <- function(x, manNames=NULL, latNames=NULL,
+                       labels=c("labels", "RAM"), what="est", nCharNodes=0,
+                       nCharEdges=0, layout=c("tree", "circle", "spring",
+                                              "tree2", "circle2"),
+                       sizeMan=8, sizeLat=8, edge.label.cex=1.3,
+                       color="white", weighted=FALSE, ...) {
+  
   if (!requireNamespace("semPlot", quietly=TRUE))    
     stop("\"semPlot\" package is required for this function.")
     
-  if (!inherits(x, "mxRAMmodel"))
-    stop("'mxRAMmodel' object is required.\n")
+  if (!inherits(x, "mxsem"))
+    stop("'mxsem' object is required.\n")
   
   A <- x$mx.fit@matrices$Amatrix$values
   S <- x$mx.fit@matrices$Smatrix$values
   F <- x$mx.fit@matrices$Fmatrix$values
   M <- x$mx.fit@matrices$Mmatrix$values
+  ## Fixed when M is NULL, i.e., no mean structure
+  if (is.null(M)) M <- matrix(0, nrow=1, ncol=ncol(A))
+  
   RAM <- x$RAM
 
   ## When there are definition variables, data in the first role are used in
@@ -402,4 +447,25 @@ plot.mxRAMmodel <- function(x, manNames=NULL, latNames=NULL,
                                sizeMan=sizeMan, sizeLat=sizeLat,
                                edge.label.cex=edge.label.cex, color=color,
                                weighted=weighted, ...) )
+}
+
+## Add lbound and ubound to Amatrix, Smatrix, and Mmatrix
+.addbound <- function(x, lbound=NULL, ubound=NULL) {
+  if (!is.null(lbound)) {
+    for (i in seq_along(lbound)) {
+      index <- x$labels==names(lbound)[i]
+      ## NAs are treated as FALSE
+      index[is.na(index)] <- FALSE
+      x$lbound[index] <- lbound[[i]]
+    }
+  }
+  
+  if (!is.null(ubound)) {
+    for (i in seq_along(ubound)) {
+      index <- x$labels==names(ubound)[i]
+      index[is.na(index)] <- FALSE
+      x$ubound[index] <- ubound[[i]]
+    }
+  }
+  x
 }
