@@ -1,4 +1,44 @@
+#' First Stage analysis of the univariate R (uniR) approach
+#' 
+#' It conducts the first stage analysis of the uniR analysis by pooling
+#' elements of the correlation coefficients individually.
+#' Variable names in the input matrices must not contain periods; rename them
+#' consistently, e.g., \code{x.1} to \code{x_1}, and check for duplicate names.
+#' 
+#' This function implements the univariate r approach proposed by Viswesvaran
+#' and Ones (1995) to conduct meta-analytic structural equation modeling
+#' (MASEM). It uses Schmidt and Hunter's approach to combine correlation
+#' coefficients. It is included in this package for research interests. The
+#' two-stage structural equation modeling (TSSEM) approach is preferred (e.g.,
+#' Cheung, 2015; Cheung & Chan, 2005).
+#' 
+#' @param Cor A list of correlation matrices
+#' @param n A vector of sample sizes
+#' @param \dots Further arguments which are currently ignored
+#' @return An object of class \code{uniR1} of the original data, the sample
+#' sizes, the harmonic mean of sample sizes, the average correlation matrix,
+#' the standard errors of the correlation matrix, and the standard deviations
+#' (heterogeneity) of the correlation matrix.
+#' @author Mike W.-L. Cheung <mikewlcheung@@nus.edu.sg>
+#' @seealso \code{\link[metaSEM]{uniR2}}, \code{\link[metaSEM]{Becker09}}
+#' @references Cheung, M. W.-L. (2015). \emph{Meta-analysis: A structural
+#' equation modeling approach}. Chichester, West Sussex: John Wiley & Sons,
+#' Inc.
+#' 
+#' Cheung, M. W.-L., & Chan, W. (2005). Meta-analytic structural equation
+#' modeling: A two-stage approach. \emph{Psychological Methods}, \bold{10},
+#' 40-64.
+#' 
+#' Schmidt, F. L., & Hunter, J. E. (2015). \emph{Methods of meta-analysis:
+#' Correcting error and bias in research findings (3rd ed.)}. Thousand Oaks,
+#' CA: Sage.
+#' 
+#' Viswesvaran, C., & Ones, D. S. (1995). Theory testing: Combining
+#' psychometric meta-analysis and structural equations modeling.
+#' \emph{Personnel Psychology}, \bold{48}, 865-885.
+#' @keywords uniR
 uniR1 <- function(Cor, n, ...) {
+  .check.cov.names(Cor)
   ## Average correlation: Schmidt and Hunter (2015, Eq. 3.1)
   ## muliplied cor matrices with n
   r.sum <- mapply("*", Cor, n, SIMPLIFY = FALSE)
@@ -65,8 +105,12 @@ print.uniR1 <- function(x, ...) {
 uniR2mx <- function(x, RAM=NULL, Amatrix = NULL, Smatrix = NULL, Fmatrix = NULL,
                     model.name=NULL, suppressWarnings=TRUE, silent=TRUE, run=TRUE, ...) {
 
+    .check.ram.names(RAM)
+    for (mat in list(Amatrix, Smatrix, Fmatrix)) .check.model.matrix(mat)
+
     if (!is.element("uniR1", class(x)))
         stop("\"x\" must be an object of class \"uniR1\".")
+    .check.cov.names(x$r.mean)
 
     ## Read RAM first. If it is not specified, read individual matrices
     if (!is.null(RAM)) {
@@ -111,6 +155,34 @@ uniR2mx <- function(x, RAM=NULL, Amatrix = NULL, Smatrix = NULL, Fmatrix = NULL,
     
     r.mean <- x$r.mean
 
+    if (nrow(Fmatrix@values) != nrow(r.mean))
+        stop("Fmatrix has ", nrow(Fmatrix@values), " observed variables, but the pooled matrix has ", nrow(r.mean), ".", call.=FALSE)
+
+    ## OpenMx expects the data and selector rows in the same order.  The
+    ## expectation dimnames instead describe all columns of the RAM model.
+    f <- Fmatrix@values
+    model.names <- colnames(f)
+    if (is.null(model.names)) model.names <- colnames(Amatrix@values)
+    obs <- rownames(f)
+    if (is.null(obs) && !is.null(model.names) && length(model.names) == ncol(f) &&
+        all(rowSums(f == 1) == 1) && all(rowSums(f != 0) == 1))
+        obs <- model.names[max.col(f, ties.method="first")]
+    data.names <- colnames(r.mean)
+    if (is.null(data.names) && !is.null(obs) && !anyDuplicated(obs))
+        dimnames(r.mean) <- list(obs, obs)
+    if (is.null(obs) && !is.null(data.names))
+        warning("Observed variable names in Fmatrix are unavailable; matching by position. Check the order; estimates may be affected.", call.=FALSE)
+    if (!is.null(obs) && !is.null(data.names)) {
+        if (anyDuplicated(obs) || anyDuplicated(data.names))
+            stop("Observed variable names must be unique in Fmatrix and the pooled matrix.", call.=FALSE)
+        if (!anyDuplicated(obs) && !anyDuplicated(data.names) && setequal(obs, data.names)) {
+            r.mean <- r.mean[obs, obs, drop=FALSE]
+        } else {
+            warning("Observed variable names in Fmatrix and the pooled matrix do not match; matching by position. Check the order and possible typos; estimates may be affected.", call.=FALSE)
+            if (!anyDuplicated(obs)) dimnames(r.mean) <- list(obs, obs)
+        }
+    }
+
     ## If no variable name is given, use x1, x2, ...
     if (is.null(colnames(r.mean))) {
         var.labels <- paste0("x", seq_len(ncol(r.mean)))
@@ -120,7 +192,9 @@ uniR2mx <- function(x, RAM=NULL, Amatrix = NULL, Smatrix = NULL, Fmatrix = NULL,
     }
 
     ## Added labels for latent variables
-    if (length(var.labels) < p) {
+    if (!is.null(model.names) && length(model.names) == p && !anyDuplicated(model.names)) {
+        var.labels <- model.names
+    } else if (length(var.labels) < p) {
         var.labels <- c(var.labels, paste0("f", seq_len(p-length(var.labels))))
     }
 
@@ -137,11 +211,13 @@ uniR2mx <- function(x, RAM=NULL, Amatrix = NULL, Smatrix = NULL, Fmatrix = NULL,
 }
 
 uniR2lavaan <- function(x, model, ...) {
+  .check.lavaan.model.names(model)
   ## if (!requireNamespace("lavaan", quietly=TRUE))
   ##   stop("\"lavaan\" package is required for this function.")
 
   if (!is.element("uniR1", class(x)))
     stop("\"x\" must be an object of class \"uniR1\".")
+  .check.cov.names(x$r.mean)
 
   lavaan::sem(model=model, sample.nobs=x$n.harmonic, sample.cov=x$r.mean, fixed.x=FALSE,
               ...)

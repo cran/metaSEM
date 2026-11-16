@@ -1,5 +1,163 @@
+#' Create or Generate the Model Implied Correlation or Covariance Matrices
+#' 
+#' It creates or generates the model implied correlation or covariance matrices
+#' based on the RAM model specification.
+#' Variable names must not contain periods; rename them consistently, e.g., \code{x.1} to \code{x_1}, and check for duplicate names.
+#' 
+#' This function can be used to generate the model implied correlation matrix
+#' for the standardized parameters with the \code{corr=TRUE} argument. Suppose
+#' we want to calculate the population correlation matrix for a mediation model
+#' with x, m, and y. We only need to specify the population path coefficients
+#' among x, m, and y in the \code{Amatrix}. We do not need to specify the
+#' population error variances of m and y. We treat the error variances as
+#' unknown parameters by giving them starting values in the \code{Smatrix}
+#' matrix. When the covariance matrix is requested by specifying
+#' \code{corr=FALSE}, it simply calculates the population model covariance
+#' matrix by treating the values in \code{Smatrix} as the population values.
+#' 
+#' @aliases impliedR rimpliedR
+#' @param RAM A RAM object including a list of matrices of the model returned
+#' from \code{\link[metaSEM]{lavaan2RAM}}.
+#' @param Amatrix If \code{RAM} is not specified, an \code{Amatrix} is
+#' required. An asymmetric matrix in the RAM specification with
+#' \code{\link[OpenMx]{MxMatrix-class}}. If it is a matrix, it will be
+#' converted into \code{\link[OpenMx]{MxMatrix-class}} by the
+#' \code{as.mxMatrix} function.
+#' @param Smatrix If \code{RAM} is not specified, an \code{Smatrix} is
+#' required. A symmetric matrix in the RAM specification with
+#' \code{\link[OpenMx]{MxMatrix-class}}. If it is a matrix, it will be
+#' converted into \code{\link[OpenMx]{MxMatrix-class}} by the
+#' \code{as.mxMatrix} function.
+#' @param Fmatrix A filter matrix in the RAM specification with
+#' \code{\link[OpenMx]{MxMatrix-class}}. If it is missing, an identity matrix
+#' with the same dimensions of \code{Smatrix} will be created, which means that
+#' all variables are observed. If it is a matrix, it will be converted into
+#' \code{\link[OpenMx]{MxMatrix-class}} by the \code{as.mxMatrix} function. It
+#' is not required when there is no latent variable.
+#' @param Mmatrix An optional matrix of the mean vector. It is assumed zeros if
+#' missing.
+#' @param AmatrixSD Standard deviations (SD) of the elements in the
+#' \code{Amatrix}. If it is missing, a matrix of zero is created.
+#' @param SmatrixSD Standard deviations (SD) of the elements in the
+#' \code{Smatrix}. If it is missing, a matrix of zero is created.
+#' @param k Number of studies.
+#' @param corr Logical. The output is either the model implied correlation
+#' matrix or the covariance matrix.
+#' @param labels A character vector of the observed and latent variables with
+#' the same dimensions as that in the \code{Amatrix} and \code{Smatrix}.
+#' @param nonPD.pop If it is \code{replace}, generated non-positive definite
+#' matrices are replaced by generated new ones which are positive definite. If
+#' it is \code{nearPD}, they are replaced by nearly positive definite matrices
+#' by calling \code{Matrix::nearPD()}. If it is \code{accept}, they are
+#' accepted.
+#' @param \dots Not used.
+#' @return A list of RAM matrices, the model implied correlation or covariance
+#' matrix of the observed variables (\code{SigmaObs}), of both observed and
+#' latent variables (\code{SigmaAll}), the minimum fit (\code{minFit}) which
+#' should be zero, and the status code of the optimization (\code{status})
+#' which should also be zero when the optimization is fine. The last object is
+#' \code{mx.fit} which is the output after running the model. It can be used in
+#' the diagnosis.
+#' @note It is important to ensure that all the population values in
+#' \code{Amatrix} must be set as fixed parameters; otherwise, these values may
+#' be altered with the \code{corr=TRUE} argument. When there is an error or
+#' warning message about the status code, there is a high chance that some of
+#' the values in \code{Amatrix} are incorrectly set as free parameters.
+#' @author Mike W.-L. Cheung <mikewlcheung@@nus.edu.sg>
+#' @keywords utilities
+#' @examples
+#' 
+#' set.seed(100)
+#' 
+#' ## A one-factor CFA model
+#' model <- "f =~ 0.3*x1 + 0.4*x2 + 0.5*x3
+#'           f ~~ 1*f"
+#' 
+#' RAM <- lavaan2RAM(model)
+#' 
+#' impliedR(RAM, corr=TRUE)
+#' 
+#' ## A simple mediation model
+#' ## All are population parameters in the A matrix
+#' A1 <- matrix(c(0, 0, 0,
+#'                0.3, 0, 0,
+#'                0.2, 0.4, 0), nrow=3, ncol=3, byrow=TRUE,
+#'              dimnames=list(c("x", "m", "y"), c("x", "m", "y")))
+#' A1             
+#' 
+#' ## Variance of x is fixed at 1 while the other variances are free.
+#' S1 <- matrix(c(1, 0, 0,
+#'                0, "0.1*ErrVarM",0,
+#'                0, 0, "0.1*ErrVarY"), nrow=3, ncol=3,
+#'              dimnames=list(c("x", "m", "y"), c("x", "m", "y")))
+#' S1
+#' 
+#' impliedR(Amatrix=A1, Smatrix=S1)
+#' 
+#' ## SD of A1
+#' A1SD <- matrix(c(0, 0, 0,
+#'                  0.1, 0, 0,
+#'                  0.1, 0.1, 0), nrow=3, ncol=3, byrow=TRUE,
+#'                dimnames=list(c("x", "m", "y"), c("x", "m", "y")))
+#' A1SD
+#' 
+#' rimpliedR(Amatrix=A1, Smatrix=S1, AmatrixSD=A1SD, k=2)
+#' 
+#' ## A CFA model
+#' A2 <- matrix(c(0, 0, 0, 0.3,
+#'                0, 0, 0, 0.4,
+#'                0, 0, 0, 0.5,
+#'                0, 0, 0, 0), nrow=4, ncol=4, byrow=TRUE,
+#'              dimnames=list(c("x1", "x2", "x3", "f"),
+#'                            c("x1", "x2", "x3", "f")))
+#' A2
+#' 
+#' ## Variance of f is fixed at 1 while the other variances are free.
+#' S2 <- matrix(c("0.7*Err1", 0, 0, 0,
+#'                 0, "0.7*Err2", 0, 0,
+#'                 0, 0, "0.7*Err3", 0,
+#'                 0, 0, 0, 1), nrow=4, ncol=4,
+#'             dimnames=list(c("x1", "x2", "x3", "f"), c("x1", "x2", "x3", "f")))
+#' S2
+#' 
+#' F2 <- create.Fmatrix(c(1,1,1,0), as.mxMatrix=FALSE)
+#' F2
+#' 
+#' ## Model implied correlation matrix
+#' impliedR(Amatrix=A2, Smatrix=S2, Fmatrix=F2, corr=TRUE)
+#' 
+#' ## Model implied covariance matrix
+#' impliedR(Amatrix=A2, Smatrix=S2, Fmatrix=F2, corr=FALSE)
+#' 
+#' ## SD of A2
+#' A2SD <- matrix(c(0, 0, 0, 0.1,
+#'                  0, 0, 0, 0.1,
+#'                  0, 0, 0, 0.1,
+#'                  0, 0, 0, 0), nrow=4, ncol=4, byrow=TRUE,
+#'                dimnames=list(c("x1", "x2", "x3", "f"),
+#'                              c("x1", "x2", "x3", "f")))               
+#' A2SD
+#' 
+#' ## SD of S2: correlated between x1 and x2
+#' S2SD <- matrix(c(0, 0.1, 0, 0,
+#'                  0.1, 0, 0, 0,
+#'                  0, 0, 0, 0.1,
+#'                  0, 0, 0, 0), nrow=4, ncol=4, byrow=TRUE,
+#'                dimnames=list(c("x1", "x2", "x3", "f"),
+#'                              c("x1", "x2", "x3", "f")))               
+#' S2SD
+#' 
+#' rimpliedR(Amatrix=A2, Smatrix=S2, Fmatrix=F2, AmatrixSD=A2SD,
+#'           SmatrixSD=S2SD, k=2)
+#' 
 impliedR <- function(RAM, Amatrix, Smatrix, Fmatrix, Mmatrix, corr=TRUE,
                      labels, ...) {
+
+  if (!missing(RAM)) .check.ram.names(RAM)
+  for (mat in list(if (!missing(Amatrix)) Amatrix,
+                   if (!missing(Smatrix)) Smatrix,
+                   if (!missing(Fmatrix)) Fmatrix,
+                   if (!missing(Mmatrix)) Mmatrix)) .check.model.matrix(mat)
 
   if (!missing(RAM)) {
     Amatrix <- RAM$A
@@ -68,13 +226,13 @@ impliedR <- function(RAM, Amatrix, Smatrix, Fmatrix, Mmatrix, corr=TRUE,
 
   mx.fit <- mxRun(model, silent=TRUE)
 
-  A <- eval(parse(text = "mxEval(Amatrix, mx.fit)"))
-  S <- eval(parse(text = "mxEval(Smatrix, mx.fit)"))
-  F <- eval(parse(text = "mxEval(Fmatrix, mx.fit)"))
-  M <- eval(parse(text = "mxEval(Mmatrix, mx.fit)"))
-  SigmaObs <- eval(parse(text = "mxEval(SigmaObs, mx.fit)"))
-  SigmaAll <- eval(parse(text = "mxEval(SigmaAll, mx.fit)"))
-  Mu <- eval(parse(text = "mxEval(Mu, mx.fit)"))
+  A <- mxEvalByName("Amatrix", mx.fit)
+  S <- mxEvalByName("Smatrix", mx.fit)
+  F <- mxEvalByName("Fmatrix", mx.fit)
+  M <- mxEvalByName("Mmatrix", mx.fit)
+  SigmaObs <- mxEvalByName("SigmaObs", mx.fit)
+  SigmaAll <- mxEvalByName("SigmaAll", mx.fit)
+  Mu <- mxEvalByName("Mu", mx.fit)
 
   ## Create the labels for the matrices
   ## Index for the observed variables
@@ -106,7 +264,7 @@ impliedR <- function(RAM, Amatrix, Smatrix, Fmatrix, Mmatrix, corr=TRUE,
   if (corr) {
     ## minFit is the amount of misfit on the constraints
     ## It should be close to zero.
-    minFit <- c(eval(parse(text = "mxEval(minFit, mx.fit)")))
+    minFit <- c(mxEvalByName("minFit", mx.fit))
     status <- c(mx.fit$output$status[[1]])
   } else {
     ## It is zero by definition for covariance matrix.
@@ -159,8 +317,14 @@ print.impliedR <- function(x, ...) {
 
 ## Generate model implied matrices from random parameters
 ## Random effects are independent.
+#' @rdname impliedR
 rimpliedR <- function(RAM, Amatrix, Smatrix, Fmatrix, AmatrixSD, SmatrixSD, k=1,
                       corr=TRUE, nonPD.pop=c("replace", "nearPD", "accept")) {
+
+  if (!missing(RAM)) .check.ram.names(RAM)
+  for (mat in list(if (!missing(Amatrix)) Amatrix,
+                   if (!missing(Smatrix)) Smatrix,
+                   if (!missing(Fmatrix)) Fmatrix)) .check.model.matrix(mat)
 
   ## Only values are used in matrices
   if (!missing(RAM)) {
